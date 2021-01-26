@@ -3,6 +3,93 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.7.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.7.3...netlify-cms-widget-image@2.7.4) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-widget-image
+
+
+
+
+
+## 2.7.3 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.7.2 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.7.1 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+# [2.7.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.6.2...netlify-cms-widget-image@2.7.0) (2020-06-18)
+
+
+### Features
+
+* add widgets schema validation ([#3841](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/issues/3841)) ([2b46608](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/2b46608f86d22c8ad34f75e396be7c34462d9e99))
+
+
+
+
+
+## [2.6.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.6.1...netlify-cms-widget-image@2.6.2) (2020-02-14)
+
+**Note:** Version bump only for package netlify-cms-widget-image
+
+
+
+
+
+## [2.6.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.6.0...netlify-cms-widget-image@2.6.1) (2020-02-13)
+
+
+### Bug Fixes
+
+* change getAsset to not return a promise ([#3232](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/issues/3232)) ([ab685e8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/ab685e85943d1ac48142f157683bc2126fd6af16))
+
+
+
+
+
+# [2.6.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.5.0...netlify-cms-widget-image@2.6.0) (2020-02-10)
+
+
+### Features
+
+* field based media/public folders ([#3208](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/issues/3208)) ([97bc0c8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/97bc0c8dc489e736f89d748ba832d78400fe4332))
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([a015d1d](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/commit/a015d1d92a4b1c0130c44fcef1c9ecdb157a0f07))
+
+
+
+
+
 # [2.5.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image/compare/netlify-cms-widget-image@2.5.0-beta.0...netlify-cms-widget-image@2.5.0) (2020-01-07)
 
 **Note:** Version bump only for package netlify-cms-widget-image

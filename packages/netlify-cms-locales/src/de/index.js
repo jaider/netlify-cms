@@ -3,6 +3,9 @@ const de = {
     login: 'Login',
     loggingIn: 'Sie werden eingeloggt...',
     loginWithNetlifyIdentity: 'Mit Netlify Identity einloggen',
+    loginWithBitbucket: 'Mit Bitbucket einloggen',
+    loginWithGitHub: 'Mit GitHub einloggen',
+    loginWithGitLab: 'Mit GitLab einloggen',
     errors: {
       email: 'Stellen Sie sicher, Ihre E-Mail-Adresse einzugeben.',
       password: 'Bitte geben Sie Ihr Passwort ein.',
@@ -31,19 +34,41 @@ const de = {
   collection: {
     sidebar: {
       collections: 'Inhaltstypen',
+      allCollections: 'Allen Inhaltstypen',
       searchAll: 'Alles durchsuchen',
+      searchIn: 'Suchen in',
     },
     collectionTop: {
+      sortBy: 'Sortieren nach',
       viewAs: 'Anzeigen als',
-      newButton: 'Neue(r) %{collectionLabel}',
+      newButton: 'Neue(r/s) %{collectionLabel}',
+      ascending: 'Aufsteigend',
+      descending: 'Absteigend',
+      searchResults: 'Suchergebnisse für "%{searchTerm}"',
+      searchResultsInCollection: 'Suchergebnisse für "%{searchTerm}" in %{collection}',
+      filterBy: 'Filtern nach',
     },
     entries: {
       loadingEntries: 'Beiträge laden',
       cachingEntries: 'Beiträge zwischenspeichern',
       longerLoading: 'Diese Aktion kann einige Minuten in Anspruch nehmen',
+      noEntries: 'Keine Beiträge',
+    },
+    defaultFields: {
+      author: {
+        label: 'Autor',
+      },
+      updatedOn: {
+        label: 'Änderungsdatum',
+      },
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'optional',
+      },
+    },
     editorControlPane: {
       widget: {
         required: '%{fieldLabel} ist erforderlich.',
@@ -56,6 +81,11 @@ const de = {
         rangeCountExact: '%{fieldLabel} muss exakt %{count} Element(e) enthalten.',
         minCount: '%{fieldLabel} muss mindestens %{minCount} Element(e) enthalten.',
         maxCount: '%{fieldLabel} darf maximal %{maxCount} Element(e) enthalten.',
+        invalidPath: `'%{path}' ist kein gültiger Pfad`,
+        pathExists: `Pfad '%{path}' existiert bereits`,
+      },
+      i18n: {
+        writingInLocale: 'Aktuelle Sprache: %{locale}',
       },
     },
     editor: {
@@ -109,11 +139,36 @@ const de = {
       deployButtonLabel: 'Live ansehen',
     },
     editorWidgets: {
+      markdown: {
+        richText: 'Rich Text',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Wähle ein Bild',
+        chooseDifferent: 'Wähle ein anderes Bild',
+        remove: 'Entferne Bild',
+      },
+      file: {
+        choose: 'Wählen Sie eine Datei',
+        chooseDifferent: 'Wählen Sie eine andere Datei',
+        remove: 'Datei löschen',
+      },
       unknownControl: {
         noControl: "Kein Bedienelement für Widget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Keine Vorschau für Widget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Überschrift 1',
+        headingTwo: 'Überschrift 2',
+        headingThree: 'Überschrift 3',
+        headingFour: 'Überschrift 4',
+        headingFive: 'Überschrift 5',
+        headingSix: 'Überschrift 6',
+      },
+      datetime: {
+        now: 'Jetzt',
       },
     },
   },
@@ -135,21 +190,26 @@ const de = {
       mediaAssets: 'Medien',
       search: 'Suchen...',
       uploading: 'Hochladen...',
-      uploadNew: 'Hochladen',
+      upload: 'Hochladen',
       deleting: 'Löschen...',
       deleteSelected: 'Ausgewähltes Element löschen',
       chooseSelected: 'Ausgewähltes Element verwenden',
     },
   },
   ui: {
+    default: {
+      goBackToSite: 'Zurück zur Seite',
+    },
     errorBoundary: {
       title: 'Fehler',
       details: 'Ein Fehler ist aufgetreten - bitte ',
       reportIt: 'berichte ihn.',
       detailsHeading: 'Details',
+      privacyWarning:
+        'Beim Eröffnen eines Fehlerberichts werden automatisch die Fehlermeldung und Debugdaten eingefügt.\nBitte überprüfen Sie, ob die Informationen korrrekt sind und entfernen Sie ggfs. sensible Daten.',
       recoveredEntry: {
-        heading: 'Widerhergestellter Beitrag',
-        warning: 'Bitte speichern Sie sich das bevor Sie die Seite verlassen!',
+        heading: 'Wiederhergestellter Beitrag',
+        warning: 'Bitte sichern Sie sich diese Informationen, bevor Sie die Seite verlassen!',
         copyButtonLabel: 'In Zwischenablage speichern',
       },
     },
@@ -172,6 +232,10 @@ const de = {
       entryUpdated: 'Beitragsstatus aktualisiert',
       onDeleteUnpublishedChanges: 'Unveröffentlichte Änderungen verworfen',
       onFailToAuth: '%{details}',
+      onLoggedOut:
+        'Sie wurden ausgeloggt. Bitte sichern Sie Ihre Daten und melden Sie sich erneut an.',
+      onBackendDown:
+        'Der Server ist aktuell nicht erreichbar. Für weitere Informationen, siehe: %{details}',
     },
   },
   workflow: {
@@ -181,6 +245,7 @@ const de = {
       newPost: 'Neuer Beitrag',
       description:
         '%{smart_count} Beitrag zur Überprüfung bereit, %{readyCount} bereit zur Veröffentlichung. |||| %{smart_count} Beiträge zur Überprüfung bereit, %{readyCount} bereit zur Veröffentlichung. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} von %{author}',

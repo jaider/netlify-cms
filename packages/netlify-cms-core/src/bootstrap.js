@@ -2,10 +2,11 @@ import React from 'react';
 import { render } from 'react-dom';
 import { Provider, connect } from 'react-redux';
 import { Route } from 'react-router-dom';
-import { ConnectedRouter } from 'react-router-redux';
+import { ConnectedRouter } from 'connected-react-router';
 import history from 'Routing/history';
 import store from 'ReduxStore';
-import { mergeConfig } from 'Actions/config';
+import { loadConfig } from 'Actions/config';
+import { authenticateUser } from 'Actions/auth';
 import { getPhrases } from 'Lib/phrases';
 import { selectLocale } from 'Reducers/config';
 import { I18n } from 'react-polyglot';
@@ -18,10 +19,10 @@ import 'what-input';
 
 const ROOT_ID = 'nc-root';
 
-const TranslatedApp = ({ locale }) => {
+const TranslatedApp = ({ locale, config }) => {
   return (
     <I18n locale={locale} messages={getPhrases(locale)}>
-      <ErrorBoundary showBackup>
+      <ErrorBoundary showBackup config={config}>
         <ConnectedRouter history={history}>
           <Route component={App} />
         </ConnectedRouter>
@@ -31,7 +32,7 @@ const TranslatedApp = ({ locale }) => {
 };
 
 const mapDispatchToProps = state => {
-  return { locale: selectLocale(state.config) };
+  return { locale: selectLocale(state.config), config: state.config };
 };
 
 const ConnectedTranslatedApp = connect(mapDispatchToProps)(TranslatedApp);
@@ -72,9 +73,11 @@ function bootstrap(opts = {}) {
    * config.yml if it exists, and any portion that produces a conflict will be
    * overwritten.
    */
-  if (config) {
-    store.dispatch(mergeConfig(config));
-  }
+  store.dispatch(
+    loadConfig(config, function onLoad() {
+      store.dispatch(authenticateUser());
+    }),
+  );
 
   /**
    * Create connected root component.

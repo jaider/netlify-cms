@@ -9,7 +9,6 @@ import {
   APIError,
   ApiRequest,
   AssetProxy,
-  Entry,
   PersistOptions,
   readFile,
   CMS_BRANCH_PREFIX,
@@ -23,8 +22,15 @@ import {
   PreviewState,
   FetchError,
   parseContentKey,
+  branchFromContentKey,
+  requestWithBackoff,
+  readFileMetadata,
+  throwOnConflictingBranches,
+  DataFile,
 } from 'netlify-cms-lib-util';
+import { dirname } from 'path';
 import { oneLine } from 'common-tags';
+import { parse } from 'what-the-diff';
 
 interface Config {
   apiRoot?: string;
@@ -35,6 +41,7 @@ interface Config {
   hasWriteAccess?: () => Promise<boolean>;
   squashMerges: boolean;
   initialWorkflowStatus: string;
+  cmsLabelPrefix: string;
 }
 
 interface CommitAuthor {
@@ -54,6 +61,7 @@ type BitBucketPullRequest = {
   id: number;
   title: string;
   state: BitBucketPullRequestState;
+  updated_on: string;
   summary: {
     raw: string;
   };
@@ -125,21 +133,6 @@ type BitBucketPullRequestStatues = {
   values: BitBucketPullRequestStatus[];
 };
 
-type BitBucketDiffStat = {
-  pagelen: number;
-  page: number;
-  size: number;
-  values: {
-    status: string;
-    lines_removed: number;
-    lines_added: number;
-    new: {
-      path: string;
-      type: 'commit_file';
-    };
-  }[];
-};
-
 type DeleteEntry = {
   path: string;
   delete: true;
@@ -172,7 +165,24 @@ type BitBucketUser = {
   };
 };
 
-export const API_NAME = 'BitBucket';
+type BitBucketBranch = {
+  name: string;
+  target: { hash: string };
+};
+
+type BitBucketCommit = {
+  hash: string;
+  author: {
+    raw: string;
+    user: {
+      display_name: string;
+      nickname: string;
+    };
+  };
+  date: string;
+};
+
+export const API_NAME = 'Bitbucket';
 
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 
@@ -194,6 +204,7 @@ export default class API {
   commitAuthor?: CommitAuthor;
   mergeStrategy: string;
   initialWorkflowStatus: string;
+  cmsLabelPrefix: string;
 
   constructor(config: Config) {
     this.apiRoot = config.apiRoot || 'https://api.bitbucket.org/2.0';
@@ -205,17 +216,26 @@ export default class API {
     this.repoURL = this.repo ? `/repositories/${this.repo}` : '';
     this.mergeStrategy = config.squashMerges ? 'squash' : 'merge_commit';
     this.initialWorkflowStatus = config.initialWorkflowStatus;
+    this.cmsLabelPrefix = config.cmsLabelPrefix;
   }
 
-  buildRequest = (req: ApiRequest) =>
-    flow([unsentRequest.withRoot(this.apiRoot), unsentRequest.withTimestamp])(req);
+  buildRequest = (req: ApiRequest) => {
+    const withRoot = unsentRequest.withRoot(this.apiRoot)(req);
+    if (withRoot.has('cache')) {
+      return withRoot;
+    } else {
+      const withNoCache = unsentRequest.withNoCache(withRoot);
+      return withNoCache;
+    }
+  };
 
-  request = (req: ApiRequest): Promise<Response> =>
-    flow([
-      this.buildRequest,
-      this.requestFunction,
-      p => p.catch((err: Error) => Promise.reject(new APIError(err.message, null, API_NAME))),
-    ])(req);
+  request = (req: ApiRequest): Promise<Response> => {
+    try {
+      return requestWithBackoff(this, req);
+    } catch (err) {
+      throw new APIError(err.message, null, API_NAME);
+    }
+  };
 
   responseToJSON = responseParser({ format: 'json', apiName: API_NAME });
   responseToBlob = responseParser({ format: 'blob', apiName: API_NAME });
@@ -235,14 +255,32 @@ export default class API {
     return response.ok;
   };
 
+  getBranch = async (branchName: string) => {
+    const branch: BitBucketBranch = await this.requestJSON(
+      `${this.repoURL}/refs/branches/${branchName}`,
+    );
+
+    return branch;
+  };
+
   branchCommitSha = async (branch: string) => {
     const {
       target: { hash: branchSha },
-    } = await this.requestJSON(`${this.repoURL}/refs/branches/${branch}`);
-    return branchSha as string;
+    }: BitBucketBranch = await this.getBranch(branch);
+
+    return branchSha;
+  };
+
+  defaultBranchCommitSha = () => {
+    return this.branchCommitSha(this.branch);
   };
 
   isFile = ({ type }: BitBucketFile) => type === 'commit_file';
+
+  getFileId = (commitHash: string, path: string) => {
+    return `${commitHash}/${path}`;
+  };
+
   processFile = (file: BitBucketFile) => ({
     id: file.id,
     type: file.type,
@@ -255,17 +293,17 @@ export default class API {
     // that will help with caching (though not as well as a normal
     // SHA, since it will change even if the individual file itself
     // doesn't.)
-    ...(file.commit && file.commit.hash ? { id: `${file.commit.hash}/${file.path}` } : {}),
+    ...(file.commit && file.commit.hash ? { id: this.getFileId(file.commit.hash, file.path) } : {}),
   });
   processFiles = (files: BitBucketFile[]) => files.filter(this.isFile).map(this.processFile);
 
   readFile = async (
     path: string,
     sha?: string | null,
-    { parseText = true, branch = this.branch } = {},
+    { parseText = true, branch = this.branch, head = '' } = {},
   ): Promise<string | Blob> => {
     const fetchContent = async () => {
-      const node = await this.branchCommitSha(branch);
+      const node = head ? head : await this.branchCommitSha(branch);
       const content = await this.request({
         url: `${this.repoURL}/src/${node}/${path}`,
         cache: 'no-store',
@@ -276,10 +314,44 @@ export default class API {
     return content;
   };
 
+  async readFileMetadata(path: string, sha: string | null | undefined) {
+    const fetchFileMetadata = async () => {
+      try {
+        const { values }: { values: BitBucketCommit[] } = await this.requestJSON({
+          url: `${this.repoURL}/commits`,
+          params: { path, include: this.branch },
+        });
+        const commit = values[0];
+        return {
+          author: commit.author.user
+            ? commit.author.user.display_name || commit.author.user.nickname
+            : commit.author.raw,
+          updatedOn: commit.date,
+        };
+      } catch (e) {
+        return { author: '', updatedOn: '' };
+      }
+    };
+    const fileMetadata = await readFileMetadata(sha, fetchFileMetadata, localForage);
+    return fileMetadata;
+  }
+
+  async isShaExistsInBranch(branch: string, sha: string) {
+    const { values }: { values: BitBucketCommit[] } = await this.requestJSON({
+      url: `${this.repoURL}/commits`,
+      params: { include: branch, pagelen: 100 },
+    }).catch(e => {
+      console.log(`Failed getting commits for branch '${branch}'`, e);
+      return [];
+    });
+
+    return values.some(v => v.hash === sha);
+  }
+
   getEntriesAndCursor = (jsonResponse: BitBucketSrcResult) => {
     const {
       size: count,
-      page: index,
+      page,
       pagelen: pageSize,
       next,
       previous: prev,
@@ -290,21 +362,20 @@ export default class API {
       entries,
       cursor: Cursor.create({
         actions: [...(next ? ['next'] : []), ...(prev ? ['prev'] : [])],
-        meta: { index, count, pageSize, pageCount },
+        meta: { page, count, pageSize, pageCount },
         data: { links: { next, prev } },
       }),
     };
   };
 
-  listFiles = async (path: string, depth = 1) => {
-    const node = await this.branchCommitSha(this.branch);
+  listFiles = async (path: string, depth = 1, pagelen: number, branch: string) => {
+    const node = await this.branchCommitSha(branch);
     const result: BitBucketSrcResult = await this.requestJSON({
       url: `${this.repoURL}/src/${node}/${path}`,
       params: {
-        // sort files by filename ascending
-        sort: '-path',
         // eslint-disable-next-line @typescript-eslint/camelcase
         max_depth: depth,
+        pagelen,
       },
     }).catch(replace404WithEmptyResponse);
     const { entries, cursor } = this.getEntriesAndCursor(result);
@@ -331,8 +402,13 @@ export default class API {
       })),
     ])(cursor.data!.getIn(['links', action]));
 
-  listAllFiles = async (path: string, depth = 1) => {
-    const { cursor: initialCursor, entries: initialEntries } = await this.listFiles(path, depth);
+  listAllFiles = async (path: string, depth: number, branch: string) => {
+    const { cursor: initialCursor, entries: initialEntries } = await this.listFiles(
+      path,
+      depth,
+      100,
+      branch,
+    );
     const entries = [...initialEntries];
     let currentCursor = initialCursor;
     while (currentCursor && currentCursor.actions!.has('next')) {
@@ -347,7 +423,7 @@ export default class API {
   };
 
   async uploadFiles(
-    files: (Entry | AssetProxy | DeleteEntry)[],
+    files: { path: string; newPath?: string; delete?: boolean }[],
     {
       commitMessage,
       branch,
@@ -355,17 +431,45 @@ export default class API {
     }: { commitMessage: string; branch: string; parentSha?: string },
   ) {
     const formData = new FormData();
+    const toMove: { from: string; to: string; contentBlob: Blob }[] = [];
     files.forEach(file => {
-      if ((file as DeleteEntry).delete) {
+      if (file.delete) {
         // delete the file
         formData.append('files', file.path);
+      } else if (file.newPath) {
+        const contentBlob = get(file, 'fileObj', new Blob([(file as DataFile).raw]));
+        toMove.push({ from: file.path, to: file.newPath, contentBlob });
       } else {
         // add/modify the file
-        const contentBlob = get(file, 'fileObj', new Blob([(file as Entry).raw]));
+        const contentBlob = get(file, 'fileObj', new Blob([(file as DataFile).raw]));
         // Third param is filename header, in case path is `message`, `branch`, etc.
         formData.append(file.path, contentBlob, basename(file.path));
       }
     });
+    for (const { from, to, contentBlob } of toMove) {
+      const sourceDir = dirname(from);
+      const destDir = dirname(to);
+      const filesBranch = parentSha ? this.branch : branch;
+      const files = await this.listAllFiles(sourceDir, 100, filesBranch);
+      for (const file of files) {
+        // to move a file in Bitbucket we need to delete the old path
+        // and upload the file content to the new path
+        // NOTE: this is very wasteful, and also the Bitbucket `diff` API
+        // reports these files as deleted+added instead of renamed
+        // delete current path
+        formData.append('files', file.path);
+        // create in new path
+        const content =
+          file.path === from
+            ? contentBlob
+            : await this.readFile(file.path, null, {
+                branch: filesBranch,
+                parseText: false,
+              });
+        formData.append(file.path.replace(sourceDir, destDir), content, basename(file.path));
+      }
+    }
+
     if (commitMessage) {
       formData.append('message', commitMessage);
     }
@@ -380,19 +484,29 @@ export default class API {
       formData.append('parents', parentSha);
     }
 
-    await this.request({
-      url: `${this.repoURL}/src`,
-      method: 'POST',
-      body: formData,
-    });
+    try {
+      await this.requestText({
+        url: `${this.repoURL}/src`,
+        method: 'POST',
+        body: formData,
+      });
+    } catch (error) {
+      const message = error.message || '';
+      // very descriptive message from Bitbucket
+      if (parentSha && message.includes('Something went wrong')) {
+        await throwOnConflictingBranches(branch, name => this.getBranch(name), API_NAME);
+      }
+      throw error;
+    }
 
     return files;
   }
 
-  async persistFiles(entry: Entry | null, mediaFiles: AssetProxy[], options: PersistOptions) {
-    const files = entry ? [entry, ...mediaFiles] : mediaFiles;
+  async persistFiles(dataFiles: DataFile[], mediaFiles: AssetProxy[], options: PersistOptions) {
+    const files = [...dataFiles, ...mediaFiles];
     if (options.useWorkflow) {
-      return this.editorialWorkflowGit(files, entry as Entry, options);
+      const slug = dataFiles[0].slug;
+      return this.editorialWorkflowGit(files, slug, options);
     } else {
       return this.uploadFiles(files, { commitMessage: options.commitMessage, branch: this.branch });
     }
@@ -444,22 +558,43 @@ export default class API {
       }),
     });
     // use comments for status labels
-    await this.addPullRequestComment(pullRequest, statusToLabel(status));
+    await this.addPullRequestComment(pullRequest, statusToLabel(status, this.cmsLabelPrefix));
   }
 
-  async getDifferences(branch: string) {
-    const diff: BitBucketDiffStat = await this.requestJSON({
-      url: `${this.repoURL}/diffstat/${branch}..${this.branch}`,
+  async getDifferences(source: string, destination: string = this.branch) {
+    if (source === destination) {
+      return [];
+    }
+    const rawDiff = await this.requestText({
+      url: `${this.repoURL}/diff/${source}..${destination}`,
       params: {
-        pagelen: 100,
+        binary: false,
       },
     });
-    return diff.values;
+
+    const diffs = parse(rawDiff).map(d => {
+      const oldPath = d.oldPath?.replace(/b\//, '') || '';
+      const newPath = d.newPath?.replace(/b\//, '') || '';
+      const path = newPath || (oldPath as string);
+      return {
+        oldPath,
+        newPath,
+        status: d.status,
+        newFile: d.status === 'added',
+        path,
+        binary: d.binary || /.svg$/.test(path),
+      };
+    });
+    return diffs;
   }
 
-  async editorialWorkflowGit(files: (Entry | AssetProxy)[], entry: Entry, options: PersistOptions) {
-    const contentKey = this.generateContentKey(options.collectionName as string, entry.slug);
-    const branch = this.branchFromContentKey(contentKey);
+  async editorialWorkflowGit(
+    files: (DataFile | AssetProxy)[],
+    slug: string,
+    options: PersistOptions,
+  ) {
+    const contentKey = generateContentKey(options.collectionName as string, slug);
+    const branch = branchFromContentKey(contentKey);
     const unpublished = options.unpublished || false;
     if (!unpublished) {
       const defaultBranchSha = await this.branchCommitSha(this.branch);
@@ -477,9 +612,9 @@ export default class API {
       // mark files for deletion
       const diffs = await this.getDifferences(branch);
       const toDelete: DeleteEntry[] = [];
-      for (const diff of diffs) {
-        if (!files.some(file => file.path === diff.new.path)) {
-          toDelete.push({ path: diff.new.path, delete: true });
+      for (const diff of diffs.filter(d => d.binary && d.status !== 'deleted')) {
+        if (!files.some(file => file.path === diff.path)) {
+          toDelete.push({ path: diff.path, delete: true });
         }
       }
 
@@ -490,9 +625,11 @@ export default class API {
     }
   }
 
-  deleteFile = (path: string, message: string) => {
+  deleteFiles = (paths: string[], message: string) => {
     const body = new FormData();
-    body.append('files', path);
+    paths.forEach(path => {
+      body.append('files', path);
+    });
     body.append('branch', this.branch);
     if (message) {
       body.append('message', message);
@@ -505,31 +642,6 @@ export default class API {
       `${this.repoURL}/src`,
     );
   };
-
-  generateContentKey(collectionName: string, slug: string) {
-    return generateContentKey(collectionName, slug);
-  }
-
-  contentKeyFromBranch(branch: string) {
-    return branch.substring(`${CMS_BRANCH_PREFIX}/`.length);
-  }
-
-  branchFromContentKey(contentKey: string) {
-    return `${CMS_BRANCH_PREFIX}/${contentKey}`;
-  }
-
-  async isFileExists(path: string, branch: string) {
-    const fileExists = await this.readFile(path, null, { branch })
-      .then(() => true)
-      .catch(error => {
-        if (error instanceof APIError && error.status === 404) {
-          return false;
-        }
-        throw error;
-      });
-
-    return fileExists;
-  }
 
   async getPullRequests(sourceBranch?: string) {
     const sourceQuery = sourceBranch
@@ -554,7 +666,7 @@ export default class API {
       pullRequests.values.map(pr => this.getPullRequestLabel(pr.id)),
     );
 
-    return pullRequests.values.filter((_, index) => isCMSLabel(labels[index]));
+    return pullRequests.values.filter((_, index) => isCMSLabel(labels[index], this.cmsLabelPrefix));
   }
 
   async getBranchPullRequest(branch: string) {
@@ -564,39 +676,6 @@ export default class API {
     }
 
     return pullRequests[0];
-  }
-
-  async retrieveMetadata(contentKey: string) {
-    const { collection, slug } = parseContentKey(contentKey);
-    const branch = this.branchFromContentKey(contentKey);
-    const pullRequest = await this.getBranchPullRequest(branch);
-    const diff = await this.getDifferences(branch);
-    const path = diff.find(d => d.new.path.includes(slug))?.new.path as string;
-    // TODO: get real file id
-    const mediaFiles = await Promise.all(
-      diff.filter(d => d.new.path !== path).map(d => ({ path: d.new.path, id: null })),
-    );
-    const label = await this.getPullRequestLabel(pullRequest.id);
-    const status = labelToStatus(label);
-    return { branch, collection, slug, path, status, mediaFiles };
-  }
-
-  async readUnpublishedBranchFile(contentKey: string) {
-    const { branch, collection, slug, path, status, mediaFiles } = await this.retrieveMetadata(
-      contentKey,
-    );
-
-    const [fileData, isModification] = await Promise.all([
-      this.readFile(path, null, { branch }) as Promise<string>,
-      this.isFileExists(path, this.branch),
-    ]);
-
-    return {
-      slug,
-      metaData: { branch, collection, objects: { entry: { path, mediaFiles } }, status },
-      fileData,
-      isModification,
-    };
   }
 
   async listUnpublishedBranches() {
@@ -611,12 +690,32 @@ export default class API {
     return branches;
   }
 
+  async retrieveUnpublishedEntryData(contentKey: string) {
+    const { collection, slug } = parseContentKey(contentKey);
+    const branch = branchFromContentKey(contentKey);
+    const pullRequest = await this.getBranchPullRequest(branch);
+    const diffs = await this.getDifferences(branch);
+    const label = await this.getPullRequestLabel(pullRequest.id);
+    const status = labelToStatus(label, this.cmsLabelPrefix);
+    const updatedAt = pullRequest.updated_on;
+    return {
+      collection,
+      slug,
+      status,
+      // TODO: get real id
+      diffs: diffs
+        .filter(d => d.status !== 'deleted')
+        .map(d => ({ path: d.path, newFile: d.newFile, id: '' })),
+      updatedAt,
+    };
+  }
+
   async updateUnpublishedEntryStatus(collection: string, slug: string, newStatus: string) {
-    const contentKey = this.generateContentKey(collection, slug);
-    const branch = this.branchFromContentKey(contentKey);
+    const contentKey = generateContentKey(collection, slug);
+    const branch = branchFromContentKey(contentKey);
     const pullRequest = await this.getBranchPullRequest(branch);
 
-    await this.addPullRequestComment(pullRequest, statusToLabel(newStatus));
+    await this.addPullRequestComment(pullRequest, statusToLabel(newStatus, this.cmsLabelPrefix));
   }
 
   async mergePullRequest(pullRequest: BitBucketPullRequest) {
@@ -635,8 +734,8 @@ export default class API {
   }
 
   async publishUnpublishedEntry(collectionName: string, slug: string) {
-    const contentKey = this.generateContentKey(collectionName, slug);
-    const branch = this.branchFromContentKey(contentKey);
+    const contentKey = generateContentKey(collectionName, slug);
+    const branch = branchFromContentKey(contentKey);
     const pullRequest = await this.getBranchPullRequest(branch);
 
     await this.mergePullRequest(pullRequest);
@@ -657,8 +756,8 @@ export default class API {
   }
 
   async deleteUnpublishedEntry(collectionName: string, slug: string) {
-    const contentKey = this.generateContentKey(collectionName, slug);
-    const branch = this.branchFromContentKey(contentKey);
+    const contentKey = generateContentKey(collectionName, slug);
+    const branch = branchFromContentKey(contentKey);
     const pullRequest = await this.getBranchPullRequest(branch);
 
     await this.declinePullRequest(pullRequest);
@@ -677,8 +776,8 @@ export default class API {
   }
 
   async getStatuses(collectionName: string, slug: string) {
-    const contentKey = this.generateContentKey(collectionName, slug);
-    const branch = this.branchFromContentKey(contentKey);
+    const contentKey = generateContentKey(collectionName, slug);
+    const branch = branchFromContentKey(contentKey);
     const pullRequest = await this.getBranchPullRequest(branch);
     const statuses = await this.getPullRequestStatuses(pullRequest);
 
@@ -691,5 +790,12 @@ export default class API {
       // eslint-disable-next-line @typescript-eslint/camelcase
       target_url: url,
     }));
+  }
+
+  async getUnpublishedEntrySha(collection: string, slug: string) {
+    const contentKey = generateContentKey(collection, slug);
+    const branch = branchFromContentKey(contentKey);
+    const pullRequest = await this.getBranchPullRequest(branch);
+    return pullRequest.destination.commit.hash;
   }
 }

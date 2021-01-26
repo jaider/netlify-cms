@@ -17,6 +17,7 @@ export default class GitLabAuthenticationPage extends React.Component {
     authEndpoint: PropTypes.string,
     config: PropTypes.object.isRequired,
     clearHash: PropTypes.func,
+    t: PropTypes.func.isRequired,
   };
 
   state = {};
@@ -68,7 +69,7 @@ export default class GitLabAuthenticationPage extends React.Component {
   };
 
   render() {
-    const { inProgress, config } = this.props;
+    const { inProgress, config, t } = this.props;
     return (
       <AuthenticationPage
         onLogin={this.handleLogin}
@@ -78,9 +79,11 @@ export default class GitLabAuthenticationPage extends React.Component {
         siteUrl={config.site_url}
         renderButtonContent={() => (
           <React.Fragment>
-            <LoginButtonIcon type="gitlab" /> {inProgress ? 'Logging in...' : 'Login with GitLab'}
+            <LoginButtonIcon type="gitlab" />{' '}
+            {inProgress ? t('auth.loggingIn') : t('auth.loginWithGitLab')}
           </React.Fragment>
         )}
+        t={t}
       />
     );
   }

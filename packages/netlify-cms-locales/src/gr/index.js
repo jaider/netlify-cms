@@ -3,6 +3,9 @@ const gr = {
     login: 'Σύνδεση',
     loggingIn: 'Σύνδεση στο...',
     loginWithNetlifyIdentity: 'Σύνδεση μέσω Netlify',
+    loginWithBitbucket: 'Σύνδεση μέσω Bitbucket',
+    loginWithGitHub: 'Σύνδεση μέσω GitHub',
+    loginWithGitLab: 'Σύνδεση μέσω GitLab',
     errors: {
       email: 'Βεβαιωθείτε ότι έχετε εισαγάγει το email σας.',
       password: 'Παρακαλώ εισάγετε τον κωδικό πρόσβασής σας.',
@@ -44,6 +47,11 @@ const gr = {
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'προαιρετικός',
+      },
+    },
     editorControlPane: {
       widget: {
         required: 'Το %{fieldLabel} είναι απαραίτητο.',
@@ -106,11 +114,29 @@ const gr = {
       deployButtonLabel: 'Προβολή Live',
     },
     editorWidgets: {
+      image: {
+        choose: 'Επιλέξτε μια εικόνα',
+        chooseDifferent: 'Επιλέξτε διαφορετική εικόνα',
+        remove: 'Αφαιρέστε την εικόνα',
+      },
+      file: {
+        choose: 'Επιλέξτε ένα αρχείο',
+        chooseDifferent: 'Επιλέξτε διαφορετικό αρχείο',
+        remove: 'Αφαιρέστε το αρχείο',
+      },
       unknownControl: {
         noControl: "Δεν υπάρχει έλεγχος για το widget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Δεν υπάρχει προεπισκόπηση για το widget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
       },
     },
   },
@@ -133,7 +159,7 @@ const gr = {
       mediaAssets: 'Αρχεία πολυμέσων',
       search: 'Αναζήτηση...',
       uploading: 'Φόρτωμα...',
-      uploadNew: 'Ανεβάστε νέα',
+      upload: 'Ανεβάστε νέα',
       deleting: 'Διαγραφή...',
       deleteSelected: 'Διαγραφή επιλεγμένου',
       chooseSelected: 'Επιλέξτε επιλεγμένο',
@@ -179,6 +205,7 @@ const gr = {
       newPost: 'Νέα δημοσίευση',
       description:
         '%{smart_count} καταχώρησεις σε αναμονή για αναθεώρηση, %{readyCount} έτοιμες για Live μετάβαση. |||| %{smart_count} καταχωρήσεις σε αναμονή για αναθεώρηση, %{readyCount} έτοιμες για Live μετάβαση. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} από %{author}',

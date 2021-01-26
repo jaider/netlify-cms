@@ -1,7 +1,7 @@
 {
   "name": "netlify-cms-widget-image",
   "description": "Widget for uploading images in Netlify CMS.",
-  "version": "2.5.0",
+  "version": "2.7.4",
   "homepage": "https://www.netlifycms.org/docs/widgets/#image",
   "repository": "https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-image",
   "bugs": "https://github.com/netlify/netlify-cms/issues",
@@ -23,8 +23,8 @@
     "build:esm": "cross-env NODE_ENV=esm babel src --out-dir dist/esm --ignore \"**/__tests__\" --root-mode upward"
   },
   "peerDependencies": {
-    "@emotion/core": "^10.0.9",
-    "@emotion/styled": "^10.0.9",
+    "@emotion/core": "^10.0.35",
+    "@emotion/styled": "^10.0.27",
     "immutable": "^3.7.6",
     "netlify-cms-ui-default": "^2.6.0",
     "netlify-cms-widget-file": "^2.4.0",

@@ -53,7 +53,7 @@ const WorkflowTopDescription = styled.p`
 
 class Workflow extends Component {
   static propTypes = {
-    collections: ImmutablePropTypes.orderedMap,
+    collections: ImmutablePropTypes.orderedMap.isRequired,
     isEditorialWorkflow: PropTypes.bool.isRequired,
     isOpenAuthoring: PropTypes.bool,
     isFetching: PropTypes.bool,
@@ -128,6 +128,7 @@ class Workflow extends Component {
           handlePublish={publishUnpublishedEntry}
           handleDelete={deleteUnpublishedEntry}
           isOpenAuthoring={isOpenAuthoring}
+          collections={collections}
         />
       </WorkflowContainer>
     );

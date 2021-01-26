@@ -8,6 +8,8 @@ const allowedActions = [
   'getEntry',
   'unpublishedEntries',
   'unpublishedEntry',
+  'unpublishedEntryDataFile',
+  'unpublishedEntryMediaFile',
   'deleteUnpublishedEntry',
   'persistEntry',
   'updateUnpublishedEntryStatus',
@@ -16,6 +18,7 @@ const allowedActions = [
   'getMediaFile',
   'persistMedia',
   'deleteFile',
+  'deleteFiles',
   'getDeployPreview',
 ];
 
@@ -35,6 +38,13 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
     path,
     content: requiredString,
     encoding: requiredString.valid('base64'),
+  });
+
+  const dataFile = Joi.object({
+    slug: requiredString,
+    path,
+    raw: requiredString,
+    newPath: path.optional(),
   });
 
   const params = Joi.when('action', {
@@ -57,7 +67,7 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
         is: 'entriesByFiles',
         then: defaultParams.keys({
           files: Joi.array()
-            .items(Joi.object({ path }))
+            .items(Joi.object({ path, label: Joi.string() }))
             .required(),
         }),
       },
@@ -77,8 +87,32 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
         is: 'unpublishedEntry',
         then: defaultParams
           .keys({
+            id: Joi.string().optional(),
+            collection: Joi.string().optional(),
+            slug: Joi.string().optional(),
+            cmsLabelPrefix: Joi.string().optional(),
+          })
+          .required(),
+      },
+      {
+        is: 'unpublishedEntryDataFile',
+        then: defaultParams
+          .keys({
             collection,
             slug,
+            id: requiredString,
+            path: requiredString,
+          })
+          .required(),
+      },
+      {
+        is: 'unpublishedEntryMediaFile',
+        then: defaultParams
+          .keys({
+            collection,
+            slug,
+            id: requiredString,
+            path: requiredString,
           })
           .required(),
       },
@@ -95,7 +129,9 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
         is: 'persistEntry',
         then: defaultParams
           .keys({
-            entry: Joi.object({ slug: requiredString, path, raw: requiredString }).required(),
+            cmsLabelPrefix: Joi.string().optional(),
+            entry: dataFile, // entry is kept for backwards compatibility
+            dataFiles: Joi.array().items(dataFile),
             assets: Joi.array()
               .items(asset)
               .required(),
@@ -106,6 +142,7 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
               status: requiredString,
             }).required(),
           })
+          .xor('entry', 'dataFiles')
           .required(),
       },
       {
@@ -115,6 +152,7 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
             collection,
             slug,
             newStatus: requiredString,
+            cmsLabelPrefix: Joi.string().optional(),
           })
           .required(),
       },
@@ -159,6 +197,20 @@ export const defaultSchema = ({ path = requiredString } = {}) => {
         then: defaultParams
           .keys({
             path,
+            options: Joi.object({
+              commitMessage: requiredString,
+            }).required(),
+          })
+          .required(),
+      },
+      {
+        is: 'deleteFiles',
+        then: defaultParams
+          .keys({
+            paths: Joi.array()
+              .items(path)
+              .min(1)
+              .required(),
             options: Joi.object({
               commitMessage: requiredString,
             }).required(),

@@ -33,6 +33,11 @@ const uk = {
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'необов’язково',
+      },
+    },
     editorControlPane: {
       widget: {
         required: "%{fieldLabel} є обов'язковим.",
@@ -87,11 +92,29 @@ const uk = {
       deployButtonLabel: 'Переглянути наживо',
     },
     editorWidgets: {
+      image: {
+        choose: 'Виберіть зображення',
+        chooseDifferent: 'Виберіть інше зображення',
+        remove: 'Видалити зображення',
+      },
+      file: {
+        choose: 'Виберіть файл',
+        chooseDifferent: 'Виберіть інший файл',
+        remove: 'Видалити файл',
+      },
       unknownControl: {
         noControl: "Відсутній модуль для '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Відсутній перегляд для '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
       },
     },
   },
@@ -112,7 +135,7 @@ const uk = {
       mediaAssets: 'Медіа матеріали',
       search: 'Пошук...',
       uploading: 'Завантаження...',
-      uploadNew: 'Завантажити',
+      upload: 'Завантажити',
       deleting: 'Видалення...',
       deleteSelected: 'Видалити обране',
       chooseSelected: 'Додати обране',
@@ -155,6 +178,7 @@ const uk = {
       workflowHeading: 'Редакція',
       newPost: 'Новий запис',
       description: '%{smart_count} записів очікують розгляду, %{readyCount} готові до публікації. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} від %{author}',

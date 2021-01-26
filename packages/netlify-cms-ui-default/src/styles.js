@@ -200,6 +200,7 @@ const buttons = {
     padding: 0 24px 0 14px;
   `,
   small: css`
+    font-size: 13px;
     height: 23px;
     line-height: 23px;
   `,
@@ -212,6 +213,10 @@ const buttons = {
       color: ${colorsRaw.white};
       background-color: #555a65;
     }
+  `,
+  grayText: css`
+    background-color: transparent;
+    color: ${colorsRaw.gray};
   `,
   green: css`
     background-color: #aae31f;
@@ -239,16 +244,25 @@ const buttons = {
   `,
 };
 
+const caret = css`
+  color: ${colorsRaw.white};
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-radius: 2px;
+`;
+
 const components = {
   card,
   caretDown: css`
-    color: ${colorsRaw.white};
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
+    ${caret};
     border-top: 6px solid currentColor;
-    border-radius: 2px;
+    border-bottom: 0;
+  `,
+  caretRight: css`
+    ${caret};
+    border-left: 6px solid currentColor;
+    border-right: 0;
   `,
   badge: css`
     ${backgroundBadge};
@@ -317,10 +331,11 @@ const components = {
     color: ${colorsRaw.gray};
     font-weight: 500;
     border-bottom: 1px solid #eaebf1;
-    padding: 10px 14px;
+    padding: 8px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-width: max-content;
 
     &:last-of-type {
       border-bottom: 0;
@@ -333,6 +348,12 @@ const components = {
       color: ${colors.active};
       background-color: ${colors.activeBackground};
     }
+  `,
+  viewControlsText: css`
+    font-size: 14px;
+    color: ${colors.text};
+    margin-right: 12px;
+    white-space: nowrap;
   `,
 };
 
@@ -352,7 +373,7 @@ const reactSelectStyles = {
       : 'transparent',
     paddingLeft: '22px',
   }),
-  menu: styles => ({ ...styles, right: 0, zIndex: 300 }),
+  menu: styles => ({ ...styles, right: 0, zIndex: zIndex.zIndex300 }),
   container: styles => ({ ...styles, padding: '0 !important' }),
   indicatorSeparator: (styles, state) =>
     state.hasValue && state.selectProps.isClearable
@@ -377,6 +398,20 @@ const reactSelectStyles = {
       backgroundColor: colors.errorBackground,
     },
   }),
+};
+
+const zIndex = {
+  zIndex0: 0,
+  zIndex1: 1,
+  zIndex2: 2,
+  zIndex10: 10,
+  zIndex100: 100,
+  zIndex200: 200,
+  zIndex299: 299,
+  zIndex300: 300,
+  zIndex1000: 1000,
+  zIndex10000: 10000,
+  zIndex99999: 99999,
 };
 
 const GlobalStyles = () => (
@@ -479,6 +514,7 @@ export {
   borders,
   transitions,
   effects,
+  zIndex,
   reactSelectStyles,
   GlobalStyles,
 };

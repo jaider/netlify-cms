@@ -10,6 +10,7 @@ jest.mock('lodash/debounce', () => {
     return func;
   };
 });
+// eslint-disable-next-line react/display-name
 jest.mock('../EditorInterface', () => props => <mock-editor-interface {...props} />);
 jest.mock('netlify-cms-ui-default', () => {
   return {
@@ -25,7 +26,6 @@ describe('Editor', () => {
     changeDraftField: jest.fn(),
     changeDraftFieldValidation: jest.fn(),
     collection: fromJS({ name: 'posts' }),
-    createDraftFromEntry: jest.fn(),
     createDraftDuplicateFromEntry: jest.fn(),
     createEmptyDraft: jest.fn(),
     discardDraft: jest.fn(),
@@ -50,6 +50,7 @@ describe('Editor', () => {
     localBackup: fromJS({}),
     retrieveLocalBackup: jest.fn(),
     persistLocalBackup: jest.fn(),
+    location: { search: '?title=title' },
   };
 
   beforeEach(() => {
@@ -114,7 +115,7 @@ describe('Editor', () => {
     );
 
     expect(props.createEmptyDraft).toHaveBeenCalledTimes(1);
-    expect(props.createEmptyDraft).toHaveBeenCalledWith(props.collection);
+    expect(props.createEmptyDraft).toHaveBeenCalledWith(props.collection, '?title=title');
     expect(props.loadEntry).toHaveBeenCalledTimes(0);
   });
 
@@ -203,7 +204,7 @@ describe('Editor', () => {
       <Editor
         {...props}
         entryDraft={fromJS({ entry: { mediaFiles: [{ id: '1' }] } })}
-        entry={fromJS({ isFetching: false })}
+        entry={fromJS({ isFetching: false, data: {} })}
         hasChanged={true}
       />,
     );
@@ -212,34 +213,6 @@ describe('Editor', () => {
     expect(props.persistLocalBackup).toHaveBeenCalledWith(
       fromJS({ mediaFiles: [{ id: '1' }] }),
       props.collection,
-    );
-  });
-
-  it('should create draft from entry when done fetching', () => {
-    const { rerender } = render(
-      <Editor
-        {...props}
-        entryDraft={fromJS({ entry: {} })}
-        entry={fromJS({ isFetching: false, mediaFiles: [] })}
-      />,
-    );
-
-    jest.clearAllMocks();
-    rerender(
-      <Editor
-        {...props}
-        entryDraft={fromJS({
-          entry: {},
-          fieldsMetaData: {},
-        })}
-        entry={fromJS({ isFetching: false, mediaFiles: [{ id: '1' }] })}
-      />,
-    );
-
-    expect(props.createDraftFromEntry).toHaveBeenCalledTimes(1);
-    expect(props.createDraftFromEntry).toHaveBeenCalledWith(
-      fromJS({ isFetching: false, data: {}, mediaFiles: [{ id: '1' }] }),
-      fromJS({}),
     );
   });
 });

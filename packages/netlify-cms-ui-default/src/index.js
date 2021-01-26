@@ -1,4 +1,9 @@
-import Dropdown, { DropdownItem, DropdownButton, StyledDropdownButton } from './Dropdown';
+import Dropdown, {
+  DropdownItem,
+  DropdownCheckedItem,
+  DropdownButton,
+  StyledDropdownButton,
+} from './Dropdown';
 import Icon from './Icon';
 import ListItemTopBar from './ListItemTopBar';
 import Loader from './Loader';
@@ -9,7 +14,6 @@ import AuthenticationPage from './AuthenticationPage';
 import WidgetPreviewContainer from './WidgetPreviewContainer';
 import ObjectWidgetTopBar from './ObjectWidgetTopBar';
 import GoBackButton from './GoBackButton';
-import Asset from './Asset';
 import {
   fonts,
   colorsRaw,
@@ -22,6 +26,7 @@ import {
   borders,
   transitions,
   effects,
+  zIndex,
   reactSelectStyles,
   GlobalStyles,
 } from './styles';
@@ -29,6 +34,7 @@ import {
 export const NetlifyCmsUiDefault = {
   Dropdown,
   DropdownItem,
+  DropdownCheckedItem,
   DropdownButton,
   StyledDropdownButton,
   ListItemTopBar,
@@ -54,13 +60,14 @@ export const NetlifyCmsUiDefault = {
   borders,
   transitions,
   effects,
+  zIndex,
   reactSelectStyles,
   GlobalStyles,
-  Asset,
 };
 export {
   Dropdown,
   DropdownItem,
+  DropdownCheckedItem,
   DropdownButton,
   StyledDropdownButton,
   ListItemTopBar,
@@ -86,8 +93,8 @@ export {
   borders,
   transitions,
   effects,
+  zIndex,
   reactSelectStyles,
   GlobalStyles,
   GoBackButton,
-  Asset,
 };

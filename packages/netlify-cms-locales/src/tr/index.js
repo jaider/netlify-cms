@@ -3,6 +3,10 @@ const tr = {
     login: 'Giriş',
     loggingIn: 'Giriş yapılıyor..',
     loginWithNetlifyIdentity: 'Netlify Identity ile Giriş',
+    loginWithAzure: 'Azure ile Giriş',
+    loginWithBitbucket: 'Bitbucket ile Giriş',
+    loginWithGitHub: 'GitHub ile Giriş',
+    loginWithGitLab: 'GitLab ile Giriş',
     errors: {
       email: 'E-postanızı girdiğinizden emin olun.',
       password: 'Şifrenizi lütfen giriniz.',
@@ -44,6 +48,11 @@ const tr = {
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'seçmeli',
+      },
+    },
     editorControlPane: {
       widget: {
         required: '%{fieldLabel} zorunlu',
@@ -52,13 +61,17 @@ const tr = {
         range: '%{fieldLabel} - %{minValue} ve %{maxValue} arasında olmalı.',
         min: '%{fieldLabel} en az %{minValue} olmalı.',
         max: '%{fieldLabel}, %{maxValue} veya daha az olmalı.',
+        rangeCount: '%{fieldLabel}, %{minCount} ve %{maxCount} öğeleri arasında olmalı.',
+        rangeCountExact: '%{fieldLabel}, %{count} öğe olmalıdır.',
+        minCount: '%{fieldLabel}, en az %{minCount} öğe olmalıdır.',
+        maxCount: '%{fieldLabel}, %{maxCount} veya daha az öğe olmalıdır.',
       },
     },
     editor: {
       onLeavePage: 'Bu sayfadan ayrılmak istediğinize emin misiniz?',
       onUpdatingWithUnsavedChanges:
-        'Kaydedilmemiş değişiklikleriniz var, lütfen durumu güncellemeden önce kaydedin.',
-      onPublishingNotReady: 'Lütfen yayınlamadan önce durumu "Hazır" olarak güncelleyin.',
+        'Kaydedilmemiş değişiklikleriniz var, lütfen içeriği güncellemeden önce kaydedin.',
+      onPublishingNotReady: 'Lütfen yayınlamadan önce içeriği "Hazır" olarak güncelleyin.',
       onPublishingWithUnsavedChanges:
         'Kaydedilmemiş değişiklikleriniz var, lütfen yayınlamadan önce kaydedin.',
       onPublishing: 'Bu girdi yayınlamak istediğinize emin misiniz?',
@@ -103,11 +116,33 @@ const tr = {
       deployButtonLabel: 'Canlı Görüntüle',
     },
     editorWidgets: {
+      markdown: {
+        richText: 'Zengin Metin',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Bir resim seçin',
+        chooseDifferent: 'Farklı bir resim seçin',
+        remove: 'Resmi kaldır',
+      },
+      file: {
+        choose: 'Bir dosya seçin',
+        chooseDifferent: 'Farklı bir dosya seçin',
+        remove: 'Dosyayı kaldır',
+      },
       unknownControl: {
         noControl: "'%{widget}' Widget için kontrol yok.",
       },
       unknownPreview: {
         noPreview: "'%{widget}' Widget için önizleme yok.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
       },
     },
   },
@@ -128,7 +163,7 @@ const tr = {
       mediaAssets: 'Medya dosyaları',
       search: 'Ara...',
       uploading: 'Yükleniyor...',
-      uploadNew: 'Yeni yükle',
+      upload: 'Yeni yükle',
       deleting: 'Siliniyor...',
       deleteSelected: 'Silme seçildi',
       chooseSelected: 'Seç',
@@ -155,8 +190,7 @@ const tr = {
       onFailToPersist: 'Girdi devam ettirilemedi: %{details}',
       onFailToDelete: 'Girdi silinemedi: %{details}',
       onFailToUpdateStatus: 'Durum güncellenemedi: %{details}',
-      missingRequiredField:
-        'Hata! Gerekli bir alanı kaçırdınız. Lütfen kaydetmeden önce tamamlayın.',
+      missingRequiredField: 'Gerekli bir alan eksik. Lütfen kaydetmeden önce tamamlayın.',
       entrySaved: 'Girdi kaydedildi',
       entryPublished: 'Girdi yayınlandı',
       entryUnpublished: 'Girdi yayınlanmamış',
@@ -174,6 +208,7 @@ const tr = {
       newPost: 'Yeni Mesaj',
       description:
         '%{smart_count} girdi incelemeyi bekliyor, %{readyCount} yayına hazır. |||| %{smart_count} girdi incelemeyi bekliyor, %{readyCount} yayınlanmaya hazır. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} tarafından %{author}',

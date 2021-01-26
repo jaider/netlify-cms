@@ -19,9 +19,24 @@ async function copyBackendFiles(backend) {
 async function updateConfig(configModifier) {
   const configFile = path.join(devTestDirectory, 'config.yml');
   const configContent = await fs.readFile(configFile);
-  const config = yaml.safeLoad(configContent);
+  const config = yaml.load(configContent);
   await configModifier(config);
-  await fs.writeFileSync(configFile, yaml.safeDump(config));
+  await fs.writeFileSync(configFile, yaml.dump(config));
 }
 
-module.exports = { copyBackendFiles, updateConfig };
+async function switchVersion(version) {
+  const htmlFile = path.join(devTestDirectory, 'index.html');
+  const content = await fs.readFile(htmlFile);
+
+  const replaceString =
+    version === 'latest'
+      ? '<script src="dist/netlify-cms.js"></script>'
+      : `<script src="https://unpkg.com/netlify-cms@${version}/dist/netlify-cms.js"></script>`;
+
+  await fs.writeFile(
+    htmlFile,
+    content.toString().replace(/<script src=".+?netlify-cms.+?"><\/script>/, replaceString),
+  );
+}
+
+module.exports = { copyBackendFiles, updateConfig, switchVersion };

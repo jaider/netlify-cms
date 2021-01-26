@@ -118,7 +118,7 @@ const CardDate = translate()(({ t, date, author }) => {
 });
 
 const WorkflowCard = ({
-  collectionName,
+  collectionLabel,
   title,
   authorLastChange,
   body,
@@ -126,13 +126,14 @@ const WorkflowCard = ({
   editLink,
   timestamp,
   onDelete,
+  allowPublish,
   canPublish,
   onPublish,
   t,
 }) => (
   <WorkflowCardContainer>
     <WorkflowLink to={editLink}>
-      <CardCollection>{collectionName}</CardCollection>
+      <CardCollection>{collectionLabel}</CardCollection>
       <CardTitle>{title}</CardTitle>
       {(timestamp || authorLastChange) && <CardDate date={timestamp} author={authorLastChange} />}
       <CardBody>{body}</CardBody>
@@ -143,17 +144,19 @@ const WorkflowCard = ({
           ? t('workflow.workflowCard.deleteChanges')
           : t('workflow.workflowCard.deleteNewEntry')}
       </DeleteButton>
-      <PublishButton disabled={!canPublish} onClick={onPublish}>
-        {isModification
-          ? t('workflow.workflowCard.publishChanges')
-          : t('workflow.workflowCard.publishNewEntry')}
-      </PublishButton>
+      {allowPublish && (
+        <PublishButton disabled={!canPublish} onClick={onPublish}>
+          {isModification
+            ? t('workflow.workflowCard.publishChanges')
+            : t('workflow.workflowCard.publishNewEntry')}
+        </PublishButton>
+      )}
     </CardButtonContainer>
   </WorkflowCardContainer>
 );
 
 WorkflowCard.propTypes = {
-  collectionName: PropTypes.string.isRequired,
+  collectionLabel: PropTypes.string.isRequired,
   title: PropTypes.string,
   authorLastChange: PropTypes.string,
   body: PropTypes.string,
@@ -161,6 +164,7 @@ WorkflowCard.propTypes = {
   editLink: PropTypes.string.isRequired,
   timestamp: PropTypes.string.isRequired,
   onDelete: PropTypes.func.isRequired,
+  allowPublish: PropTypes.bool.isRequired,
   canPublish: PropTypes.bool.isRequired,
   onPublish: PropTypes.func.isRequired,
   t: PropTypes.func.isRequired,

@@ -1,4 +1,4 @@
-import { Map, fromJS } from 'immutable';
+import { List, Map, fromJS } from 'immutable';
 import {
   commitMessageFormatter,
   prepareSlug,
@@ -111,6 +111,50 @@ describe('formatters', () => {
           collection,
         }),
       ).toEqual('Custom commit message');
+    });
+
+    it('should use empty values if "authorLogin" and "authorName" are missing in commit message', () => {
+      config.getIn.mockReturnValueOnce(
+        Map({
+          update: '{{author-login}} - {{author-name}}: Create {{collection}} “{{slug}}”',
+        }),
+      );
+
+      expect(
+        commitMessageFormatter(
+          'update',
+          config,
+          {
+            slug: 'doc-slug',
+            path: 'file-path',
+            collection,
+          },
+          true,
+        ),
+      ).toEqual(' - : Create Collection “doc-slug”');
+    });
+
+    it('should return custom create message with author information', () => {
+      config.getIn.mockReturnValueOnce(
+        Map({
+          create: '{{author-login}} - {{author-name}}: Create {{collection}} “{{slug}}”',
+        }),
+      );
+
+      expect(
+        commitMessageFormatter(
+          'create',
+          config,
+          {
+            slug: 'doc-slug',
+            path: 'file-path',
+            collection,
+            authorLogin: 'user-login',
+            authorName: 'Test User',
+          },
+          true,
+        ),
+      ).toEqual('user-login - Test User: Create Collection “doc-slug”');
     });
 
     it('should return custom open authoring message', () => {
@@ -281,6 +325,21 @@ describe('formatters', () => {
         ),
       ).toBe('sub_dir/2020/2020-01-01-post-title.en');
     });
+
+    it(`should replace '.' in path with -`, () => {
+      selectIdentifier.mockReturnValueOnce('title');
+
+      expect(
+        slugFormatter(
+          Map({
+            slug: '{{slug}}.en',
+            path: '../dir/{{slug}}',
+          }),
+          Map({ title: 'Post Title' }),
+          slugConfig,
+        ),
+      ).toBe('--/dir/post-title.en');
+    });
   });
 
   describe('previewUrlFormatter', () => {
@@ -294,20 +353,101 @@ describe('formatters', () => {
       );
     });
 
-    it('should return preview url based on preview_path', () => {
+    it('should return preview url based on preview_path and preview_path_date_field', () => {
       const date = new Date('2020-01-02T13:28:27.679Z');
       expect(
         previewUrlFormatter(
           'https://www.example.com',
           Map({
             preview_path: '{{year}}/{{slug}}/{{title}}/{{fields.slug}}',
-            preview_path_date_field: 'date',
+            preview_path_date_field: 'customDateField',
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({ customDateField: date, slug: 'entrySlug', title: 'title' }) }),
+        ),
+      ).toBe('https://www.example.com/2020/backendslug/title/entryslug');
+    });
+
+    it('should return preview url for files in file collection', () => {
+      const file = Map({ name: 'about-file', preview_path: '{{slug}}/{{fields.slug}}/{{title}}' });
+
+      const { getFileFromSlug } = require('../../reducers/collections');
+      getFileFromSlug.mockReturnValue(file);
+
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          Map({
+            preview_path: '{{slug}}/{{title}}/{{fields.slug}}',
+            type: 'file_based_collection',
+            files: List([file]),
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({ slug: 'about-the-project', title: 'title' }), slug: 'about-file' }),
+        ),
+      ).toBe('https://www.example.com/backendslug/about-the-project/title');
+    });
+
+    it('should return preview url for files in file collection when defined on file-level only', () => {
+      const file = Map({ name: 'about-file', preview_path: '{{slug}}/{{fields.slug}}/{{title}}' });
+
+      const { getFileFromSlug } = require('../../reducers/collections');
+      getFileFromSlug.mockReturnValue(file);
+
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          Map({
+            type: 'file_based_collection',
+            files: List([file]),
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({ slug: 'about-the-project', title: 'title' }), slug: 'about-file' }),
+        ),
+      ).toBe('https://www.example.com/backendslug/about-the-project/title');
+    });
+
+    it('should fall back to collection preview url for files in file collection', () => {
+      const file = Map({ name: 'about-file' });
+
+      const { getFileFromSlug } = require('../../reducers/collections');
+      getFileFromSlug.mockReturnValue(file);
+
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          Map({
+            preview_path: '{{slug}}/{{title}}/{{fields.slug}}',
+            type: 'file_based_collection',
+            files: List([file]),
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({ slug: 'about-the-project', title: 'title' }), slug: 'about-file' }),
+        ),
+      ).toBe('https://www.example.com/backendslug/title/about-the-project');
+    });
+
+    it('should infer date field when preview_path_date_field is not configured', () => {
+      const { selectInferedField } = require('../../reducers/collections');
+      selectInferedField.mockReturnValue('date');
+
+      const date = new Date('2020-01-02T13:28:27.679Z');
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          fromJS({
+            name: 'posts',
+            preview_path: '{{year}}/{{month}}/{{slug}}/{{title}}/{{fields.slug}}',
           }),
           'backendSlug',
           slugConfig,
           Map({ data: Map({ date, slug: 'entrySlug', title: 'title' }) }),
         ),
-      ).toBe('https://www.example.com/2020/backendslug/title/entryslug');
+      ).toBe('https://www.example.com/2020/01/backendslug/title/entryslug');
     });
 
     it('should compile filename and extension template values', () => {
@@ -322,6 +462,38 @@ describe('formatters', () => {
           Map({ data: Map({}), path: 'src/content/posts/title.md' }),
         ),
       ).toBe('https://www.example.com/posts/title.md');
+    });
+
+    it('should compile the dirname template value to empty in a regular collection', () => {
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          Map({
+            folder: '_portfolio',
+            preview_path: 'portfolio/{{dirname}}',
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({}), path: '_portfolio/i-am-the-slug.md' }),
+        ),
+      ).toBe('https://www.example.com/portfolio/');
+    });
+
+    it('should compile dirname template value when in a nested collection', () => {
+      expect(
+        previewUrlFormatter(
+          'https://www.example.com',
+          Map({
+            folder: '_portfolio',
+            preview_path: 'portfolio/{{dirname}}',
+            nested: { depth: 100 },
+            meta: { path: { widget: 'string', label: 'Path', index_file: 'index' } },
+          }),
+          'backendSlug',
+          slugConfig,
+          Map({ data: Map({}), path: '_portfolio/drawing/i-am-the-slug/index.md' }),
+        ),
+      ).toBe('https://www.example.com/portfolio/drawing/i-am-the-slug');
     });
 
     it('should log error and ignore preview_path when date is missing', () => {
@@ -357,6 +529,59 @@ describe('formatters', () => {
       const collection = fromJS({ fields: [{ name: 'date', widget: 'date' }] });
 
       expect(summaryFormatter('{{title}}-{{year}}', entry, collection)).toBe('title-2020');
+    });
+
+    it('should handle filename and extension variables', () => {
+      const { selectInferedField } = require('../../reducers/collections');
+      selectInferedField.mockReturnValue('date');
+
+      const date = new Date('2020-01-02T13:28:27.679Z');
+      const entry = fromJS({ path: 'post.md', data: { date, title: 'title' } });
+      const collection = fromJS({ fields: [{ name: 'date', widget: 'date' }] });
+
+      expect(
+        summaryFormatter('{{title}}-{{year}}-{{filename}}.{{extension}}', entry, collection),
+      ).toBe('title-2020-post.md');
+    });
+
+    it('should handle the dirname variable in a regular collection', () => {
+      const { selectInferedField } = require('../../reducers/collections');
+      selectInferedField.mockReturnValue('date');
+
+      const date = new Date('2020-01-02T13:28:27.679Z');
+      const entry = fromJS({
+        path: '_portfolio/drawing.md',
+        data: { date, title: 'title' },
+      });
+      const collection = fromJS({
+        folder: '_portfolio',
+        fields: [{ name: 'date', widget: 'date' }],
+      });
+
+      expect(summaryFormatter('{{dirname}}/{{title}}-{{year}}', entry, collection)).toBe(
+        '/title-2020',
+      );
+    });
+
+    it('should handle the dirname variable in a nested collection', () => {
+      const { selectInferedField } = require('../../reducers/collections');
+      selectInferedField.mockReturnValue('date');
+
+      const date = new Date('2020-01-02T13:28:27.679Z');
+      const entry = fromJS({
+        path: '_portfolio/drawing/index.md',
+        data: { date, title: 'title' },
+      });
+      const collection = fromJS({
+        folder: '_portfolio',
+        nested: { depth: 100 },
+        meta: { path: { widget: 'string', label: 'Path', index_file: 'index' } },
+        fields: [{ name: 'date', widget: 'date' }],
+      });
+
+      expect(summaryFormatter('{{dirname}}/{{title}}-{{year}}', entry, collection)).toBe(
+        'drawing/title-2020',
+      );
     });
   });
 
@@ -427,6 +652,51 @@ describe('formatters', () => {
           slugConfig,
         ),
       ).toBe('md');
+    });
+
+    it('should compile dirname template value in a regular collection', () => {
+      const entry = fromJS({
+        path: 'content/en/hosting-and-deployment/deployment-with-nanobox.md',
+        data: { category: 'Hosting And Deployment' },
+      });
+      const collection = fromJS({
+        folder: 'content/en/',
+      });
+
+      expect(
+        folderFormatter(
+          '{{dirname}}',
+          entry,
+          collection,
+          'static/images',
+          'media_folder',
+          slugConfig,
+        ),
+      ).toBe('hosting-and-deployment');
+    });
+
+    it('should compile dirname template value in a nested collection', () => {
+      const entry = fromJS({
+        path: '_portfolio/drawing/i-am-the-slug/index.md',
+        data: { category: 'Hosting And Deployment' },
+      });
+      const collection = fromJS({
+        folder: '_portfolio',
+        nested: { depth: 100 },
+        meta: { path: { widget: 'string', label: 'Path', index_file: 'index' } },
+        fields: [{ name: 'date', widget: 'date' }],
+      });
+
+      expect(
+        folderFormatter(
+          '{{dirname}}',
+          entry,
+          collection,
+          'static/images',
+          'media_folder',
+          slugConfig,
+        ),
+      ).toBe('drawing/i-am-the-slug');
     });
   });
 });

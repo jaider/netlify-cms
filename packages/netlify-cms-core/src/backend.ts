@@ -1,9 +1,9 @@
-import { attempt, flatten, isError, uniq } from 'lodash';
-import { List, Map, fromJS } from 'immutable';
+import { attempt, flatten, isError, uniq, trim, sortBy, get, set } from 'lodash';
+import { List, Map, fromJS, Set } from 'immutable';
 import * as fuzzy from 'fuzzy';
 import { resolveFormat } from './formats/formats';
 import { selectUseWorkflow } from './reducers/config';
-import { selectMediaFilePath, selectMediaFolder } from './reducers/entries';
+import { selectMediaFilePath, selectEntry } from './reducers/entries';
 import { selectIntegration } from './reducers/integrations';
 import {
   selectEntrySlug,
@@ -13,6 +13,9 @@ import {
   selectAllowDeletion,
   selectFolderEntryExtension,
   selectInferedField,
+  selectMediaFolders,
+  selectFieldsComments,
+  selectHasMetaPath,
 } from './reducers/collections';
 import { createEntry, EntryValue } from './valueObjects/Entry';
 import { sanitizeChar } from './lib/urlHelper';
@@ -26,14 +29,20 @@ import {
   Implementation as BackendImplementation,
   DisplayURL,
   ImplementationEntry,
-  ImplementationMediaFile,
   Credentials,
   User,
   getPathDepth,
   Config as ImplementationConfig,
+  blobToFileObj,
+  asyncLock,
+  AsyncLock,
+  UnpublishedEntry,
+  DataFile,
+  UnpublishedEntryDiff,
 } from 'netlify-cms-lib-util';
+import { basename, join, extname, dirname } from 'path';
 import { status } from './constants/publishModes';
-import { extractTemplateVars, dateParsers } from './lib/stringTemplate';
+import { stringTemplate } from 'netlify-cms-lib-widgets';
 import {
   Collection,
   EntryMap,
@@ -43,9 +52,45 @@ import {
   EntryDraft,
   CollectionFile,
   State,
+  EntryField,
 } from './types/redux';
 import AssetProxy from './valueObjects/AssetProxy';
 import { FOLDER, FILES } from './constants/collectionTypes';
+import { selectCustomPath } from './reducers/entryDraft';
+import {
+  getI18nFilesDepth,
+  getI18nFiles,
+  hasI18n,
+  getFilePaths,
+  getI18nEntry,
+  groupEntries,
+  getI18nDataFiles,
+  getI18nBackup,
+  formatI18nBackup,
+} from './lib/i18n';
+
+const { extractTemplateVars, dateParsers, expandPath } = stringTemplate;
+
+const updateAssetProxies = (
+  assetProxies: AssetProxy[],
+  config: Config,
+  collection: Collection,
+  entryDraft: EntryDraft,
+  path: string,
+) => {
+  assetProxies.map(asset => {
+    // update media files path based on entry path
+    const oldPath = asset.path;
+    const newPath = selectMediaFilePath(
+      config,
+      collection,
+      entryDraft.get('entry').set('path', path),
+      oldPath,
+      asset.field,
+    );
+    asset.path = newPath;
+  });
+};
 
 export class LocalStorageAuthStore {
   storageKey = 'netlify-cms-user';
@@ -73,21 +118,115 @@ function getEntryBackupKey(collectionName?: string, slug?: string) {
   return `${baseKey}.${collectionName}${suffix}`;
 }
 
-const extractSearchFields = (searchFields: string[]) => (entry: EntryValue) =>
-  searchFields.reduce((acc, field) => {
-    const nestedFields = field.split('.');
-    let f = entry.data;
-    for (let i = 0; i < nestedFields.length; i++) {
-      f = f[nestedFields[i]];
-      if (!f) break;
+const getEntryField = (field: string, entry: EntryValue) => {
+  const value = get(entry.data, field);
+  if (value) {
+    return String(value);
+  } else {
+    const firstFieldPart = field.split('.')[0];
+    if (entry[firstFieldPart as keyof EntryValue]) {
+      // allows searching using entry.slug/entry.path etc.
+      return entry[firstFieldPart as keyof EntryValue];
+    } else {
+      return '';
     }
-    return f ? `${acc} ${f}` : acc;
+  }
+};
+
+export const extractSearchFields = (searchFields: string[]) => (entry: EntryValue) =>
+  searchFields.reduce((acc, field) => {
+    const value = getEntryField(field, entry);
+    if (value) {
+      return `${acc} ${value}`;
+    } else {
+      return acc;
+    }
   }, '');
+
+export const expandSearchEntries = (entries: EntryValue[], searchFields: string[]) => {
+  // expand the entries for the purpose of the search
+  const expandedEntries = entries.reduce((acc, e) => {
+    const expandedFields = searchFields.reduce((acc, f) => {
+      const fields = expandPath({ data: e.data, path: f });
+      acc.push(...fields);
+      return acc;
+    }, [] as string[]);
+
+    for (let i = 0; i < expandedFields.length; i++) {
+      acc.push({ ...e, field: expandedFields[i] });
+    }
+
+    return acc;
+  }, [] as (EntryValue & { field: string })[]);
+
+  return expandedEntries;
+};
+
+export const mergeExpandedEntries = (entries: (EntryValue & { field: string })[]) => {
+  // merge the search results by slug and only keep data that matched the search
+  const fields = entries.map(f => f.field);
+  const arrayPaths: Record<string, Set<string>> = {};
+
+  const merged = entries.reduce((acc, e) => {
+    if (!acc[e.slug]) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { field, ...rest } = e;
+      acc[e.slug] = rest;
+      arrayPaths[e.slug] = Set();
+    }
+
+    const nestedFields = e.field.split('.');
+    let value = acc[e.slug].data;
+    for (let i = 0; i < nestedFields.length; i++) {
+      value = value[nestedFields[i]];
+      if (Array.isArray(value)) {
+        const path = nestedFields.slice(0, i + 1).join('.');
+        arrayPaths[e.slug] = arrayPaths[e.slug].add(path);
+      }
+    }
+
+    return acc;
+  }, {} as Record<string, EntryValue>);
+
+  // this keeps the search score sorting order designated by the order in entries
+  // and filters non matching items
+  Object.keys(merged).forEach(slug => {
+    const data = merged[slug].data;
+    for (const path of arrayPaths[slug].toArray()) {
+      const array = get(data, path) as unknown[];
+      const filtered = array.filter((_, index) => {
+        return fields.some(f => `${f}.`.startsWith(`${path}.${index}.`));
+      });
+      filtered.sort((a, b) => {
+        const indexOfA = array.indexOf(a);
+        const indexOfB = array.indexOf(b);
+        const pathOfA = `${path}.${indexOfA}.`;
+        const pathOfB = `${path}.${indexOfB}.`;
+
+        const matchingFieldIndexA = fields.findIndex(f => `${f}.`.startsWith(pathOfA));
+        const matchingFieldIndexB = fields.findIndex(f => `${f}.`.startsWith(pathOfB));
+
+        return matchingFieldIndexA - matchingFieldIndexB;
+      });
+
+      set(data, path, filtered);
+    }
+  });
+
+  return Object.values(merged);
+};
 
 const sortByScore = (a: fuzzy.FilterResult<EntryValue>, b: fuzzy.FilterResult<EntryValue>) => {
   if (a.score > b.score) return -1;
   if (a.score < b.score) return 1;
   return 0;
+};
+
+export const slugFromCustomPath = (collection: Collection, customPath: string) => {
+  const folderPath = collection.get('folder', '') as string;
+  const entryPath = customPath.toLowerCase().replace(folderPath.toLowerCase(), '');
+  const slug = join(dirname(trim(entryPath, '/')), basename(entryPath, extname(customPath)));
+  return slug;
 };
 
 interface AuthStore {
@@ -102,10 +241,23 @@ interface BackendOptions {
   config?: Config;
 }
 
+export interface MediaFile {
+  name: string;
+  id: string;
+  size?: number;
+  displayURL?: DisplayURL;
+  path: string;
+  draft?: boolean;
+  url?: string;
+  file?: File;
+  field?: EntryField;
+}
+
 interface BackupEntry {
   raw: string;
   path: string;
-  mediaFiles: ImplementationMediaFile[];
+  mediaFiles: MediaFile[];
+  i18n?: Record<string, { raw: string }>;
 }
 
 interface PersistArgs {
@@ -128,12 +280,33 @@ type Implementation = BackendImplementation & {
   init: (config: ImplementationConfig, options: ImplementationInitOptions) => Implementation;
 };
 
+const prepareMetaPath = (path: string, collection: Collection) => {
+  if (!selectHasMetaPath(collection)) {
+    return path;
+  }
+  const dir = dirname(path);
+  return dir.substr(collection.get('folder')!.length + 1) || '/';
+};
+
+const collectionDepth = (collection: Collection) => {
+  let depth;
+  depth =
+    collection.get('nested')?.get('depth') || getPathDepth(collection.get('path', '') as string);
+
+  if (hasI18n(collection)) {
+    depth = getI18nFilesDepth(collection, depth);
+  }
+
+  return depth;
+};
+
 export class Backend {
   implementation: Implementation;
   backendName: string;
   authStore: AuthStore | null;
   config: Config;
   user?: User | null;
+  backupSync: AsyncLock;
 
   constructor(
     implementation: Implementation,
@@ -152,6 +325,28 @@ export class Backend {
     if (this.implementation === null) {
       throw new Error('Cannot instantiate a Backend with no implementation');
     }
+    this.backupSync = asyncLock();
+  }
+
+  async status() {
+    const attempts = 3;
+    let status: {
+      auth: { status: boolean };
+      api: { status: boolean; statusPage: string };
+    } = {
+      auth: { status: true },
+      api: { status: true, statusPage: '' },
+    };
+    for (let i = 1; i <= attempts; i++) {
+      status = await this.implementation.status();
+      // return on first success
+      if (Object.values(status).every(s => s.status === true)) {
+        return status;
+      } else {
+        await new Promise(resolve => setTimeout(resolve, i * 1000));
+      }
+    }
+    return status;
   }
 
   currentUser() {
@@ -168,6 +363,10 @@ export class Backend {
       });
     }
     return Promise.resolve(null);
+  }
+
+  isGitBackend() {
+    return this.implementation.isGitBackend?.() || false;
   }
 
   updateUserCredentials = (updatedCredentials: Credentials) => {
@@ -193,13 +392,17 @@ export class Backend {
     });
   }
 
-  logout() {
-    return Promise.resolve(this.implementation.logout()).then(() => {
+  async logout() {
+    try {
+      await this.implementation.logout();
+    } catch (e) {
+      console.warn('Error during logout', e.message);
+    } finally {
       this.user = null;
       if (this.authStore) {
         this.authStore.logout();
       }
-    });
+    }
   }
 
   getToken = () => this.implementation.getToken();
@@ -207,12 +410,14 @@ export class Backend {
   async entryExist(collection: Collection, path: string, slug: string, useWorkflow: boolean) {
     const unpublishedEntry =
       useWorkflow &&
-      (await this.implementation.unpublishedEntry(collection.get('name'), slug).catch(error => {
-        if (error instanceof EditorialWorkflowError && error.notUnderEditorialWorkflow) {
-          return Promise.resolve(false);
-        }
-        return Promise.reject(error);
-      }));
+      (await this.implementation
+        .unpublishedEntry({ collection: collection.get('name'), slug })
+        .catch(error => {
+          if (error instanceof EditorialWorkflowError && error.notUnderEditorialWorkflow) {
+            return Promise.resolve(false);
+          }
+          return Promise.reject(error);
+        }));
 
     if (unpublishedEntry) return unpublishedEntry;
 
@@ -231,9 +436,15 @@ export class Backend {
     entryData: Map<string, unknown>,
     config: Config,
     usedSlugs: List<string>,
+    customPath: string | undefined,
   ) {
     const slugConfig = config.get('slug');
-    const slug: string = slugFormatter(collection, entryData, slugConfig);
+    let slug: string;
+    if (customPath) {
+      slug = slugFromCustomPath(collection, customPath);
+    } else {
+      slug = slugFormatter(collection, entryData, slugConfig);
+    }
     let i = 1;
     let uniqueSlug = slug;
 
@@ -253,34 +464,49 @@ export class Backend {
   }
 
   processEntries(loadedEntries: ImplementationEntry[], collection: Collection) {
-    const collectionFilter = collection.get('filter');
     const entries = loadedEntries.map(loadedEntry =>
       createEntry(
         collection.get('name'),
         selectEntrySlug(collection, loadedEntry.file.path),
         loadedEntry.file.path,
-        { raw: loadedEntry.data || '', label: loadedEntry.file.label },
+        {
+          raw: loadedEntry.data || '',
+          label: loadedEntry.file.label,
+          author: loadedEntry.file.author,
+          updatedOn: loadedEntry.file.updatedOn,
+          meta: { path: prepareMetaPath(loadedEntry.file.path, collection) },
+        },
       ),
     );
     const formattedEntries = entries.map(this.entryWithFormat(collection));
     // If this collection has a "filter" property, filter entries accordingly
+    const collectionFilter = collection.get('filter');
     const filteredEntries = collectionFilter
       ? this.filterEntries({ entries: formattedEntries }, collectionFilter)
       : formattedEntries;
+
+    if (hasI18n(collection)) {
+      const extension = selectFolderEntryExtension(collection);
+      const groupedEntries = groupEntries(collection, extension, filteredEntries);
+      return groupedEntries;
+    }
+
     return filteredEntries;
   }
 
-  listEntries(collection: Collection) {
+  async listEntries(collection: Collection) {
     const extension = selectFolderEntryExtension(collection);
     let listMethod: () => Promise<ImplementationEntry[]>;
     const collectionType = collection.get('type');
     if (collectionType === FOLDER) {
-      listMethod = () =>
-        this.implementation.entriesByFolder(
+      listMethod = () => {
+        const depth = collectionDepth(collection);
+        return this.implementation.entriesByFolder(
           collection.get('folder') as string,
           extension,
-          getPathDepth(collection.get('path', '') as string),
+          depth,
         );
+      };
     } else if (collectionType === FILES) {
       const files = collection
         .get('files')!
@@ -293,20 +519,23 @@ export class Backend {
     } else {
       throw new Error(`Unknown collection type: ${collectionType}`);
     }
-    return listMethod().then((loadedEntries: ImplementationEntry[]) => ({
-      entries: this.processEntries(loadedEntries, collection),
-      /*
+    const loadedEntries = await listMethod();
+    /*
           Wrap cursors so we can tell which collection the cursor is
           from. This is done to prevent traverseCursor from requiring a
           `collection` argument.
         */
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      // @ts-ignore
-      cursor: Cursor.create(loadedEntries[CURSOR_COMPATIBILITY_SYMBOL]).wrapData({
-        cursorType: 'collectionEntries',
-        collection,
-      }),
-    }));
+    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+    // @ts-ignore
+    const cursor = Cursor.create(loadedEntries[CURSOR_COMPATIBILITY_SYMBOL]).wrapData({
+      cursorType: 'collectionEntries',
+      collection,
+    });
+    return {
+      entries: this.processEntries(loadedEntries, collection),
+      pagination: cursor.meta?.get('page'),
+      cursor,
+    };
   }
 
   // The same as listEntries, except that if a cursor with the "next"
@@ -316,13 +545,10 @@ export class Backend {
   // for local searches and queries.
   async listAllEntries(collection: Collection) {
     if (collection.get('folder') && this.implementation.allEntriesByFolder) {
+      const depth = collectionDepth(collection);
       const extension = selectFolderEntryExtension(collection);
       return this.implementation
-        .allEntriesByFolder(
-          collection.get('folder') as string,
-          extension,
-          getPathDepth(collection.get('path', '') as string),
-        )
+        .allEntriesByFolder(collection.get('folder') as string, extension, depth)
         .then(entries => this.processEntries(entries, collection));
     }
 
@@ -348,20 +574,33 @@ export class Backend {
         const summaryFields = extractTemplateVars(summary);
 
         // TODO: pass search fields in as an argument
-        const searchFields = [
-          selectInferedField(collection, 'title'),
-          selectInferedField(collection, 'shortTitle'),
-          selectInferedField(collection, 'author'),
-          ...summaryFields.map(elem => {
-            if (dateParsers[elem]) {
-              return selectInferedField(collection, 'date');
-            }
-            return elem;
-          }),
-        ].filter(Boolean) as string[];
+        let searchFields: (string | null | undefined)[] = [];
+
+        if (collection.get('type') === FILES) {
+          collection.get('files')?.forEach(f => {
+            const topLevelFields = f!
+              .get('fields')
+              .map(f => f!.get('name'))
+              .toArray();
+            searchFields = [...searchFields, ...topLevelFields];
+          });
+        } else {
+          searchFields = [
+            selectInferedField(collection, 'title'),
+            selectInferedField(collection, 'shortTitle'),
+            selectInferedField(collection, 'author'),
+            ...summaryFields.map(elem => {
+              if (dateParsers[elem]) {
+                return selectInferedField(collection, 'date');
+              }
+              return elem;
+            }),
+          ];
+        }
+        const filteredSearchFields = searchFields.filter(Boolean) as string[];
         const collectionEntries = await this.listAllEntries(collection);
         return fuzzy.filter(searchTerm, collectionEntries, {
-          extract: extractSearchFields(uniq(searchFields)),
+          extract: extractSearchFields(uniq(filteredSearchFields)),
         });
       })
       .map(p =>
@@ -386,13 +625,35 @@ export class Backend {
     return { entries: hits };
   }
 
-  async query(collection: Collection, searchFields: string[], searchTerm: string) {
-    const entries = await this.listAllEntries(collection);
-    const hits = fuzzy
-      .filter(searchTerm, entries, { extract: extractSearchFields(searchFields) })
+  async query(
+    collection: Collection,
+    searchFields: string[],
+    searchTerm: string,
+    file?: string,
+    limit?: number,
+  ) {
+    let entries = await this.listAllEntries(collection);
+    if (file) {
+      entries = entries.filter(e => e.slug === file);
+    }
+
+    const expandedEntries = expandSearchEntries(entries, searchFields);
+
+    let hits = fuzzy
+      .filter(searchTerm, expandedEntries, {
+        extract: entry => {
+          return getEntryField(entry.field, entry);
+        },
+      })
       .sort(sortByScore)
       .map(f => f.original);
-    return { query: searchTerm, hits };
+
+    if (limit !== undefined && limit > 0) {
+      hits = hits.slice(0, limit);
+    }
+
+    const merged = mergeExpandedEntries(hits);
+    return { query: searchTerm, hits: merged };
   }
 
   traverseCursor(cursor: Cursor, action: string) {
@@ -428,46 +689,84 @@ export class Backend {
     });
 
     const label = selectFileEntryLabel(collection, slug);
-    const entry: EntryValue = this.entryWithFormat(collection)(
-      createEntry(collection.get('name'), slug, path, { raw, label, mediaFiles }),
-    );
+
+    const formatRawData = (raw: string) => {
+      return this.entryWithFormat(collection)(
+        createEntry(collection.get('name'), slug, path, {
+          raw,
+          label,
+          mediaFiles,
+          meta: { path: prepareMetaPath(path, collection) },
+        }),
+      );
+    };
+
+    const entry: EntryValue = formatRawData(raw);
+    if (hasI18n(collection) && backup.i18n) {
+      const i18n = formatI18nBackup(backup.i18n, formatRawData);
+      entry.i18n = i18n;
+    }
 
     return { entry };
   }
 
   async persistLocalDraftBackup(entry: EntryMap, collection: Collection) {
-    const key = getEntryBackupKey(collection.get('name'), entry.get('slug'));
-    const raw = this.entryToRaw(collection, entry);
-    if (!raw.trim()) {
-      return;
+    try {
+      await this.backupSync.acquire();
+      const key = getEntryBackupKey(collection.get('name'), entry.get('slug'));
+      const raw = this.entryToRaw(collection, entry);
+
+      if (!raw.trim()) {
+        return;
+      }
+
+      const mediaFiles = await Promise.all<MediaFile>(
+        entry
+          .get('mediaFiles')
+          .toJS()
+          .map(async (file: MediaFile) => {
+            // make sure to serialize the file
+            if (file.url?.startsWith('blob:')) {
+              const blob = await fetch(file.url as string).then(res => res.blob());
+              return { ...file, file: blobToFileObj(file.name, blob) };
+            }
+            return file;
+          }),
+      );
+
+      let i18n;
+      if (hasI18n(collection)) {
+        i18n = getI18nBackup(collection, entry, entry => this.entryToRaw(collection, entry));
+      }
+
+      await localForage.setItem<BackupEntry>(key, {
+        raw,
+        path: entry.get('path'),
+        mediaFiles,
+        ...(i18n && { i18n }),
+      });
+      const result = await localForage.setItem(getEntryBackupKey(), raw);
+      return result;
+    } catch (e) {
+      console.warn('persistLocalDraftBackup', e);
+    } finally {
+      this.backupSync.release();
     }
-
-    const mediaFiles = await Promise.all<ImplementationMediaFile>(
-      entry
-        .get('mediaFiles')
-        .toJS()
-        .map(async (file: ImplementationMediaFile) => {
-          // make sure to serialize the file
-          if (file.url?.startsWith('blob:')) {
-            const blob = await fetch(file.url as string).then(res => res.blob());
-            return { ...file, file: new File([blob], file.name) };
-          }
-          return file;
-        }),
-    );
-
-    await localForage.setItem<BackupEntry>(key, {
-      raw,
-      path: entry.get('path'),
-      mediaFiles,
-    });
-    return localForage.setItem(getEntryBackupKey(), raw);
   }
 
   async deleteLocalDraftBackup(collection: Collection, slug: string) {
-    const key = getEntryBackupKey(collection.get('name'), slug);
-    await localForage.removeItem(key);
-    return this.deleteAnonymousBackup();
+    try {
+      await this.backupSync.acquire();
+      await localForage.removeItem(getEntryBackupKey(collection.get('name'), slug));
+      // delete new entry backup if not deleted
+      slug && (await localForage.removeItem(getEntryBackupKey(collection.get('name'))));
+      const result = await this.deleteAnonymousBackup();
+      return result;
+    } catch (e) {
+      console.warn('deleteLocalDraftBackup', e);
+    } finally {
+      this.backupSync.release();
+    }
   }
 
   // Unnamed backup for use in the global error boundary, should always be
@@ -479,27 +778,31 @@ export class Backend {
   async getEntry(state: State, collection: Collection, slug: string) {
     const path = selectEntryPath(collection, slug) as string;
     const label = selectFileEntryLabel(collection, slug);
+    const extension = selectFolderEntryExtension(collection);
 
-    const integration = selectIntegration(state.integrations, null, 'assetStore');
+    const getEntryValue = async (path: string) => {
+      const loadedEntry = await this.implementation.getEntry(path);
+      let entry = createEntry(collection.get('name'), slug, loadedEntry.file.path, {
+        raw: loadedEntry.data,
+        label,
+        mediaFiles: [],
+        meta: { path: prepareMetaPath(loadedEntry.file.path, collection) },
+      });
 
-    const loadedEntry = await this.implementation.getEntry(path);
+      entry = this.entryWithFormat(collection)(entry);
+      entry = await this.processEntry(state, collection, entry);
 
-    const entry = createEntry(collection.get('name'), slug, loadedEntry.file.path, {
-      raw: loadedEntry.data,
-      label,
-      mediaFiles: [],
-    });
+      return entry;
+    };
 
-    const entryWithFormat = this.entryWithFormat(collection)(entry);
-    if (collection.has('media_folder') && !integration) {
-      entry.mediaFiles = await this.implementation.getMedia(
-        selectMediaFolder(state.config, collection, fromJS(entryWithFormat)),
-      );
+    let entryValue: EntryValue;
+    if (hasI18n(collection)) {
+      entryValue = await getI18nEntry(collection, extension, path, slug, getEntryValue);
     } else {
-      entry.mediaFiles = state.mediaLibrary.get('files') || [];
+      entryValue = await getEntryValue(path);
     }
 
-    return entryWithFormat;
+    return entryValue;
   }
 
   getMedia() {
@@ -521,9 +824,9 @@ export class Backend {
     return Promise.reject(err);
   }
 
-  entryWithFormat(collectionOrEntity: unknown) {
+  entryWithFormat(collection: Collection) {
     return (entry: EntryValue): EntryValue => {
-      const format = resolveFormat(collectionOrEntity, entry);
+      const format = resolveFormat(collection, entry);
       if (entry && entry.raw !== undefined) {
         const data = (format && attempt(format.fromFile.bind(format, entry.raw))) || {};
         if (isError(data)) console.error(data);
@@ -533,45 +836,134 @@ export class Backend {
     };
   }
 
-  unpublishedEntries(collections: Collections) {
-    return this.implementation.unpublishedEntries!()
-      .then(entries =>
-        entries.map(loadedEntry => {
-          const collectionName = loadedEntry.metaData!.collection;
+  async processUnpublishedEntry(
+    collection: Collection,
+    entryData: UnpublishedEntry,
+    withMediaFiles: boolean,
+  ) {
+    const { slug } = entryData;
+    let extension: string;
+    if (collection.get('type') === FILES) {
+      const file = collection.get('files')!.find(f => f?.get('name') === slug);
+      extension = extname(file.get('file'));
+    } else {
+      extension = selectFolderEntryExtension(collection);
+    }
+
+    const mediaFiles: MediaFile[] = [];
+    if (withMediaFiles) {
+      const nonDataFiles = entryData.diffs.filter(d => !d.path.endsWith(extension));
+      const files = await Promise.all(
+        nonDataFiles.map(f =>
+          this.implementation!.unpublishedEntryMediaFile(
+            collection.get('name'),
+            slug,
+            f.path,
+            f.id,
+          ),
+        ),
+      );
+      mediaFiles.push(...files.map(f => ({ ...f, draft: true })));
+    }
+
+    const dataFiles = sortBy(
+      entryData.diffs.filter(d => d.path.endsWith(extension)),
+      f => f.path.length,
+    );
+
+    const formatData = (data: string, path: string, newFile: boolean) => {
+      const entry = createEntry(collection.get('name'), slug, path, {
+        raw: data,
+        isModification: !newFile,
+        label: collection && selectFileEntryLabel(collection, slug),
+        mediaFiles,
+        updatedOn: entryData.updatedAt,
+        status: entryData.status,
+        meta: { path: prepareMetaPath(path, collection) },
+      });
+
+      const entryWithFormat = this.entryWithFormat(collection)(entry);
+      return entryWithFormat;
+    };
+
+    const readAndFormatDataFile = async (dataFile: UnpublishedEntryDiff) => {
+      const data = await this.implementation.unpublishedEntryDataFile(
+        collection.get('name'),
+        entryData.slug,
+        dataFile.path,
+        dataFile.id,
+      );
+      const entryWithFormat = formatData(data, dataFile.path, dataFile.newFile);
+      return entryWithFormat;
+    };
+
+    // if the unpublished entry has no diffs, return the original
+    if (dataFiles.length <= 0) {
+      const loadedEntry = await this.implementation.getEntry(
+        selectEntryPath(collection, slug) as string,
+      );
+      return formatData(loadedEntry.data, loadedEntry.file.path, false);
+    } else if (hasI18n(collection)) {
+      // we need to read all locales files and not just the changes
+      const path = selectEntryPath(collection, slug) as string;
+      const i18nFiles = getI18nDataFiles(collection, extension, path, slug, dataFiles);
+      let entries = await Promise.all(
+        i18nFiles.map(dataFile => readAndFormatDataFile(dataFile).catch(() => null)),
+      );
+      entries = entries.filter(Boolean);
+      const grouped = await groupEntries(collection, extension, entries as EntryValue[]);
+      return grouped[0];
+    } else {
+      const entryWithFormat = await readAndFormatDataFile(dataFiles[0]);
+      return entryWithFormat;
+    }
+  }
+
+  async unpublishedEntries(collections: Collections) {
+    const ids = await this.implementation.unpublishedEntries!();
+    const entries = (
+      await Promise.all(
+        ids.map(async id => {
+          const entryData = await this.implementation.unpublishedEntry({ id });
+          const collectionName = entryData.collection;
           const collection = collections.find(c => c.get('name') === collectionName);
-          const entry = createEntry(collectionName, loadedEntry.slug, loadedEntry.file.path, {
-            raw: loadedEntry.data,
-            isModification: loadedEntry.isModification,
-            label: selectFileEntryLabel(collection, loadedEntry.slug!),
-          });
-          entry.metaData = loadedEntry.metaData;
+          if (!collection) {
+            console.warn(`Missing collection '${collectionName}' for unpublished entry '${id}'`);
+            return null;
+          }
+          const entry = await this.processUnpublishedEntry(collection, entryData, false);
           return entry;
         }),
       )
-      .then(entries => ({
-        pagination: 0,
-        entries: entries.reduce((acc, entry) => {
-          const collection = collections.get(entry.collection);
-          if (collection) {
-            acc.push(this.entryWithFormat(collection)(entry) as EntryValue);
-          }
-          return acc;
-        }, [] as EntryValue[]),
-      }));
+    ).filter(Boolean) as EntryValue[];
+
+    return { pagination: 0, entries };
   }
 
-  unpublishedEntry(collection: Collection, slug: string) {
-    return this.implementation!.unpublishedEntry!(collection.get('name') as string, slug)
-      .then(loadedEntry => {
-        const entry = createEntry(collection.get('name'), loadedEntry.slug, loadedEntry.file.path, {
-          raw: loadedEntry.data,
-          isModification: loadedEntry.isModification,
-          metaData: loadedEntry.metaData,
-          mediaFiles: loadedEntry.mediaFiles,
-        });
-        return entry;
-      })
-      .then(this.entryWithFormat(collection));
+  async processEntry(state: State, collection: Collection, entry: EntryValue) {
+    const integration = selectIntegration(state.integrations, null, 'assetStore');
+    const mediaFolders = selectMediaFolders(state, collection, fromJS(entry));
+    if (mediaFolders.length > 0 && !integration) {
+      const files = await Promise.all(
+        mediaFolders.map(folder => this.implementation.getMedia(folder)),
+      );
+      entry.mediaFiles = entry.mediaFiles.concat(...files);
+    } else {
+      entry.mediaFiles = entry.mediaFiles.concat(state.mediaLibrary.get('files') || []);
+    }
+
+    return entry;
+  }
+
+  async unpublishedEntry(state: State, collection: Collection, slug: string) {
+    const entryData = await this.implementation!.unpublishedEntry!({
+      collection: collection.get('name') as string,
+      slug,
+    });
+
+    let entry = await this.processUnpublishedEntry(collection, entryData, true);
+    entry = await this.processEntry(state, collection, entry);
+    return entry;
   }
 
   /**
@@ -651,25 +1043,22 @@ export class Backend {
   async persistEntry({
     config,
     collection,
-    entryDraft,
+    entryDraft: draft,
     assetProxies,
     usedSlugs,
     unpublished = false,
     status,
   }: PersistArgs) {
+    const modifiedData = await this.invokePreSaveEvent(draft.get('entry'));
+    const entryDraft = (modifiedData && draft.setIn(['entry', 'data'], modifiedData)) || draft;
+
     const newEntry = entryDraft.getIn(['entry', 'newRecord']) || false;
 
-    const parsedData = {
-      title: entryDraft.getIn(['entry', 'data', 'title'], 'No Title') as string,
-      description: entryDraft.getIn(['entry', 'data', 'description'], 'No Description!') as string,
-    };
+    const useWorkflow = selectUseWorkflow(config);
 
-    let entryObj: {
-      path: string;
-      slug: string;
-      raw: string;
-    };
+    const customPath = selectCustomPath(collection, entryDraft);
 
+    let dataFile: DataFile;
     if (newEntry) {
       if (!selectAllowNewEntries(collection)) {
         throw new Error('Not allowed to create new entries in this collection');
@@ -679,34 +1068,41 @@ export class Backend {
         entryDraft.getIn(['entry', 'data']),
         config,
         usedSlugs,
+        customPath,
       );
-      const path = selectEntryPath(collection, slug) as string;
-
-      entryObj = {
+      const path = customPath || (selectEntryPath(collection, slug) as string);
+      dataFile = {
         path,
         slug,
         raw: this.entryToRaw(collection, entryDraft.get('entry')),
       };
 
-      assetProxies.map(asset => {
-        // update media files path based on entry path
-        const oldPath = asset.path;
-        const newPath = selectMediaFilePath(
-          config,
-          collection,
-          entryDraft.get('entry').set('path', path),
-          oldPath,
-        );
-        asset.path = newPath;
-      });
+      updateAssetProxies(assetProxies, config, collection, entryDraft, path);
     } else {
-      const path = entryDraft.getIn(['entry', 'path']);
       const slug = entryDraft.getIn(['entry', 'slug']);
-      entryObj = {
+      dataFile = {
+        path: entryDraft.getIn(['entry', 'path']),
+        // for workflow entries we refresh the slug on publish
+        slug: customPath && !useWorkflow ? slugFromCustomPath(collection, customPath) : slug,
+        raw: this.entryToRaw(collection, entryDraft.get('entry')),
+        newPath: customPath,
+      };
+    }
+
+    const { slug, path, newPath } = dataFile;
+
+    let dataFiles = [dataFile];
+    if (hasI18n(collection)) {
+      const extension = selectFolderEntryExtension(collection);
+      dataFiles = getI18nFiles(
+        collection,
+        extension,
+        entryDraft.get('entry'),
+        (draftData: EntryMap) => this.entryToRaw(collection, draftData),
         path,
         slug,
-        raw: this.entryToRaw(collection, entryDraft.get('entry')),
-      };
+        newPath,
+      );
     }
 
     const user = (await this.currentUser()) as User;
@@ -715,22 +1111,19 @@ export class Backend {
       config,
       {
         collection,
-        slug: entryObj.slug,
-        path: entryObj.path,
+        slug,
+        path,
         authorLogin: user.login,
         authorName: user.name,
       },
       user.useOpenAuthoring,
     );
 
-    const useWorkflow = selectUseWorkflow(config);
-
     const collectionName = collection.get('name');
 
     const updatedOptions = { unpublished, status };
     const opts = {
       newEntry,
-      parsedData,
       commitMessage,
       collectionName,
       useWorkflow,
@@ -741,23 +1134,50 @@ export class Backend {
       await this.invokePrePublishEvent(entryDraft.get('entry'));
     }
 
-    await this.implementation.persistEntry(entryObj, assetProxies, opts);
+    await this.implementation.persistEntry(
+      {
+        dataFiles,
+        assets: assetProxies,
+      },
+      opts,
+    );
+
+    await this.invokePostSaveEvent(entryDraft.get('entry'));
 
     if (!useWorkflow) {
       await this.invokePostPublishEvent(entryDraft.get('entry'));
     }
 
-    return entryObj.slug;
+    return slug;
+  }
+
+  async invokeEventWithEntry(event: string, entry: EntryMap) {
+    const { login, name } = (await this.currentUser()) as User;
+    return await invokeEvent({ name: event, data: { entry, author: { login, name } } });
   }
 
   async invokePrePublishEvent(entry: EntryMap) {
-    const { login, name } = (await this.currentUser()) as User;
-    await invokeEvent({ name: 'prePublish', data: { entry, author: { login, name } } });
+    await this.invokeEventWithEntry('prePublish', entry);
   }
 
   async invokePostPublishEvent(entry: EntryMap) {
-    const { login, name } = (await this.currentUser()) as User;
-    await invokeEvent({ name: 'postPublish', data: { entry, author: { login, name } } });
+    await this.invokeEventWithEntry('postPublish', entry);
+  }
+
+  async invokePreUnpublishEvent(entry: EntryMap) {
+    await this.invokeEventWithEntry('preUnpublish', entry);
+  }
+
+  async invokePostUnpublishEvent(entry: EntryMap) {
+    await this.invokeEventWithEntry('postUnpublish', entry);
+  }
+
+  async invokePreSaveEvent(entry: EntryMap) {
+    return await this.invokeEventWithEntry('preSave', entry);
+  }
+
+  async invokePostSaveEvent(entry: EntryMap) {
+    await this.invokeEventWithEntry('postSave', entry);
   }
 
   async persistMedia(config: Config, file: AssetProxy) {
@@ -777,8 +1197,10 @@ export class Backend {
     return this.implementation.persistMedia(file, options);
   }
 
-  async deleteEntry(config: Config, collection: Collection, slug: string) {
+  async deleteEntry(state: State, collection: Collection, slug: string) {
+    const config = state.config;
     const path = selectEntryPath(collection, slug) as string;
+    const extension = selectFolderEntryExtension(collection) as string;
 
     if (!selectAllowDeletion(collection)) {
       throw new Error('Not allowed to delete entries in this collection');
@@ -797,7 +1219,16 @@ export class Backend {
       },
       user.useOpenAuthoring,
     );
-    return this.implementation.deleteFile(path, commitMessage);
+
+    const entry = selectEntry(state.entries, collection.get('name'), slug);
+    await this.invokePreUnpublishEvent(entry);
+    let paths = [path];
+    if (hasI18n(collection)) {
+      paths = getFilePaths(collection, extension, path, slug);
+    }
+    await this.implementation.deleteFiles(paths, commitMessage);
+
+    await this.invokePostUnpublishEvent(entry);
   }
 
   async deleteMedia(config: Config, path: string) {
@@ -812,7 +1243,7 @@ export class Backend {
       },
       user.useOpenAuthoring,
     );
-    return this.implementation.deleteFile(path, commitMessage);
+    return this.implementation.deleteFiles([path], commitMessage);
   }
 
   persistUnpublishedEntry(args: PersistArgs) {
@@ -839,7 +1270,8 @@ export class Backend {
   entryToRaw(collection: Collection, entry: EntryMap): string {
     const format = resolveFormat(collection, entry.toJS());
     const fieldsOrder = this.fieldsOrder(collection, entry);
-    return format && format.toFile(entry.get('data').toJS(), fieldsOrder);
+    const fieldsComments = selectFieldsComments(collection, entry);
+    return format && format.toFile(entry.get('data').toJS(), fieldsOrder, fieldsComments);
   }
 
   fieldsOrder(collection: Collection, entry: EntryMap) {

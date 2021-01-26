@@ -38,6 +38,7 @@ export default class AuthenticationPage extends React.Component {
     onLogin: PropTypes.func.isRequired,
     inProgress: PropTypes.bool,
     config: PropTypes.object.isRequired,
+    t: PropTypes.func.isRequired,
   };
 
   handleLogin = e => {
@@ -46,15 +47,15 @@ export default class AuthenticationPage extends React.Component {
   };
 
   render() {
-    const { config, inProgress } = this.props;
+    const { config, inProgress, t } = this.props;
 
     return (
       <StyledAuthenticationPage>
         <PageLogoIcon size="300px" type="netlify-cms" />
         <LoginButton disabled={inProgress} onClick={this.handleLogin}>
-          {inProgress ? 'Logging in...' : 'Login'}
+          {inProgress ? t('auth.loggingIn') : t('auth.login')}
         </LoginButton>
-        {config.site_url && <GoBackButton href={config.site_url}></GoBackButton>}
+        {config.site_url && <GoBackButton href={config.site_url} t={t}></GoBackButton>}
       </StyledAuthenticationPage>
     );
   }

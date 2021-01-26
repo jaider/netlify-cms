@@ -22,6 +22,10 @@ import {
   UNPUBLISHED_ENTRY_PERSIST_SUCCESS,
   UNPUBLISHED_ENTRY_PERSIST_FAILURE,
 } from 'Actions/editorialWorkflow';
+import { get } from 'lodash';
+import { selectFolderEntryExtension, selectHasMetaPath } from './collections';
+import { join } from 'path';
+import { getDataPath, duplicateI18nFields } from '../lib/i18n';
 
 const initialState = Map({
   entry: Map(),
@@ -36,12 +40,9 @@ const entryDraftReducer = (state = Map(), action) => {
     case DRAFT_CREATE_FROM_ENTRY:
       // Existing Entry
       return state.withMutations(state => {
-        state.set('entry', action.payload.entry);
+        state.set('entry', fromJS(action.payload.entry));
         state.setIn(['entry', 'newRecord'], false);
-        // An existing entry may already have metadata. If we surfed away and back to its
-        // editor page, the metadata will have been fetched already, so we shouldn't
-        // clear it as to not break relation lists.
-        state.set('fieldsMetaData', action.payload.metadata || Map());
+        state.set('fieldsMetaData', Map());
         state.set('fieldsErrors', Map());
         state.set('hasChanged', false);
         state.set('key', uuid());
@@ -88,13 +89,31 @@ const entryDraftReducer = (state = Map(), action) => {
       });
       return state.set('localBackup', newState);
     }
-    case DRAFT_CHANGE_FIELD:
+    case DRAFT_CHANGE_FIELD: {
       return state.withMutations(state => {
-        state.setIn(['entry', 'data', action.payload.field], action.payload.value);
-        state.mergeDeepIn(['fieldsMetaData'], fromJS(action.payload.metadata));
-        state.set('hasChanged', true);
-      });
+        const { field, value, metadata, entries, i18n } = action.payload;
+        const name = field.get('name');
+        const meta = field.get('meta');
 
+        const dataPath = (i18n && getDataPath(i18n.currentLocale, i18n.defaultLocale)) || ['data'];
+        if (meta) {
+          state.setIn(['entry', 'meta', name], value);
+        } else {
+          state.setIn(['entry', ...dataPath, name], value);
+          if (i18n) {
+            state = duplicateI18nFields(state, field, i18n.locales, i18n.defaultLocale);
+          }
+        }
+        state.mergeDeepIn(['fieldsMetaData'], fromJS(metadata));
+        const newData = state.getIn(['entry', ...dataPath]);
+        const newMeta = state.getIn(['entry', 'meta']);
+        state.set(
+          'hasChanged',
+          !entries.some(e => newData.equals(e.get(...dataPath))) ||
+            !entries.some(e => newMeta.equals(e.get('meta'))),
+        );
+      });
+    }
     case DRAFT_VALIDATION_ERRORS:
       if (action.payload.errors.length === 0) {
         return state.deleteIn(['fieldsErrors', action.payload.uniquefieldId]);
@@ -161,6 +180,18 @@ const entryDraftReducer = (state = Map(), action) => {
     default:
       return state;
   }
+};
+
+export const selectCustomPath = (collection, entryDraft) => {
+  if (!selectHasMetaPath(collection)) {
+    return;
+  }
+  const meta = entryDraft.getIn(['entry', 'meta']);
+  const path = meta && meta.get('path');
+  const indexFile = get(collection.toJS(), ['meta', 'path', 'index_file']);
+  const extension = selectFolderEntryExtension(collection);
+  const customPath = path && join(collection.get('folder'), path, `${indexFile}.${extension}`);
+  return customPath;
 };
 
 export default entryDraftReducer;

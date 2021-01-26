@@ -3,13 +3,26 @@ import PropTypes from 'prop-types';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import styled from '@emotion/styled';
 import { connect } from 'react-redux';
-import { lengths } from 'netlify-cms-ui-default';
+import { translate } from 'react-polyglot';
+import { lengths, components } from 'netlify-cms-ui-default';
 import { getNewEntryUrl } from 'Lib/urlHelper';
 import Sidebar from './Sidebar';
 import CollectionTop from './CollectionTop';
 import EntriesCollection from './Entries/EntriesCollection';
 import EntriesSearch from './Entries/EntriesSearch';
-import { VIEW_STYLE_LIST } from 'Constants/collectionViews';
+import CollectionControls from './CollectionControls';
+import { sortByField, filterByField, changeViewStyle, groupByField } from '../../actions/entries';
+import {
+  selectSortableFields,
+  selectViewFilters,
+  selectViewGroups,
+} from '../../reducers/collections';
+import {
+  selectEntriesSort,
+  selectEntriesFilter,
+  selectEntriesGroup,
+  selectViewStyle,
+} from '../../reducers/entries';
 
 const CollectionContainer = styled.div`
   margin: ${lengths.pageMargin};
@@ -19,51 +32,112 @@ const CollectionMain = styled.main`
   padding-left: 280px;
 `;
 
-class Collection extends React.Component {
+const SearchResultContainer = styled.div`
+  ${components.cardTop};
+  margin-bottom: 22px;
+`;
+
+const SearchResultHeading = styled.h1`
+  ${components.cardTopHeading};
+`;
+
+export class Collection extends React.Component {
   static propTypes = {
     searchTerm: PropTypes.string,
     collectionName: PropTypes.string,
     isSearchResults: PropTypes.bool,
+    isSingleSearchResult: PropTypes.bool,
     collection: ImmutablePropTypes.map.isRequired,
     collections: ImmutablePropTypes.orderedMap.isRequired,
-  };
-
-  state = {
-    viewStyle: VIEW_STYLE_LIST,
+    sortableFields: PropTypes.array,
+    sort: ImmutablePropTypes.orderedMap,
+    onSortClick: PropTypes.func.isRequired,
   };
 
   renderEntriesCollection = () => {
-    const { collection } = this.props;
-    return <EntriesCollection collection={collection} viewStyle={this.state.viewStyle} />;
+    const { collection, filterTerm, viewStyle } = this.props;
+    return (
+      <EntriesCollection collection={collection} viewStyle={viewStyle} filterTerm={filterTerm} />
+    );
   };
 
   renderEntriesSearch = () => {
-    const { searchTerm, collections } = this.props;
-    return <EntriesSearch collections={collections} searchTerm={searchTerm} />;
-  };
-
-  handleChangeViewStyle = viewStyle => {
-    if (this.state.viewStyle !== viewStyle) {
-      this.setState({ viewStyle });
-    }
+    const { searchTerm, collections, collection, isSingleSearchResult } = this.props;
+    return (
+      <EntriesSearch
+        collections={isSingleSearchResult ? collections.filter(c => c === collection) : collections}
+        searchTerm={searchTerm}
+      />
+    );
   };
 
   render() {
-    const { collection, collections, collectionName, isSearchResults, searchTerm } = this.props;
-    const newEntryUrl = collection.get('create') ? getNewEntryUrl(collectionName) : '';
+    const {
+      collection,
+      collections,
+      collectionName,
+      isSearchResults,
+      isSingleSearchResult,
+      searchTerm,
+      sortableFields,
+      onSortClick,
+      sort,
+      viewFilters,
+      viewGroups,
+      filterTerm,
+      t,
+      onFilterClick,
+      onGroupClick,
+      filter,
+      group,
+      onChangeViewStyle,
+      viewStyle,
+    } = this.props;
+
+    let newEntryUrl = collection.get('create') ? getNewEntryUrl(collectionName) : '';
+    if (newEntryUrl && filterTerm) {
+      newEntryUrl = getNewEntryUrl(collectionName);
+      if (filterTerm) {
+        newEntryUrl = `${newEntryUrl}?path=${filterTerm}`;
+      }
+    }
+
+    const searchResultKey =
+      'collection.collectionTop.searchResults' + (isSingleSearchResult ? 'InCollection' : '');
+
     return (
       <CollectionContainer>
-        <Sidebar collections={collections} searchTerm={searchTerm} />
+        <Sidebar
+          collections={collections}
+          collection={(!isSearchResults || isSingleSearchResult) && collection}
+          searchTerm={searchTerm}
+          filterTerm={filterTerm}
+        />
         <CollectionMain>
-          {isSearchResults ? null : (
-            <CollectionTop
-              collectionLabel={collection.get('label')}
-              collectionLabelSingular={collection.get('label_singular')}
-              collectionDescription={collection.get('description')}
-              newEntryUrl={newEntryUrl}
-              viewStyle={this.state.viewStyle}
-              onChangeViewStyle={this.handleChangeViewStyle}
-            />
+          {isSearchResults ? (
+            <SearchResultContainer>
+              <SearchResultHeading>
+                {t(searchResultKey, { searchTerm, collection: collection.get('label') })}
+              </SearchResultHeading>
+            </SearchResultContainer>
+          ) : (
+            <>
+              <CollectionTop collection={collection} newEntryUrl={newEntryUrl} />
+              <CollectionControls
+                viewStyle={viewStyle}
+                onChangeViewStyle={onChangeViewStyle}
+                sortableFields={sortableFields}
+                onSortClick={onSortClick}
+                sort={sort}
+                viewFilters={viewFilters}
+                viewGroups={viewGroups}
+                t={t}
+                onFilterClick={onFilterClick}
+                onGroupClick={onGroupClick}
+                filter={filter}
+                group={group}
+              />
+            </>
           )}
           {isSearchResults ? this.renderEntriesSearch() : this.renderEntriesCollection()}
         </CollectionMain>
@@ -74,10 +148,53 @@ class Collection extends React.Component {
 
 function mapStateToProps(state, ownProps) {
   const { collections } = state;
-  const { isSearchResults, match } = ownProps;
-  const { name, searchTerm } = match.params;
+  const { isSearchResults, match, t } = ownProps;
+  const { name, searchTerm = '', filterTerm = '' } = match.params;
   const collection = name ? collections.get(name) : collections.first();
-  return { collection, collections, collectionName: name, isSearchResults, searchTerm };
+  const sort = selectEntriesSort(state.entries, collection.get('name'));
+  const sortableFields = selectSortableFields(collection, t);
+  const viewFilters = selectViewFilters(collection);
+  const viewGroups = selectViewGroups(collection);
+  const filter = selectEntriesFilter(state.entries, collection.get('name'));
+  const group = selectEntriesGroup(state.entries, collection.get('name'));
+  const viewStyle = selectViewStyle(state.entries);
+
+  return {
+    collection,
+    collections,
+    collectionName: name,
+    isSearchResults,
+    searchTerm,
+    filterTerm,
+    sort,
+    sortableFields,
+    viewFilters,
+    viewGroups,
+    filter,
+    group,
+    viewStyle,
+  };
 }
 
-export default connect(mapStateToProps)(Collection);
+const mapDispatchToProps = {
+  sortByField,
+  filterByField,
+  changeViewStyle,
+  groupByField,
+};
+
+const mergeProps = (stateProps, dispatchProps, ownProps) => {
+  return {
+    ...stateProps,
+    ...ownProps,
+    onSortClick: (key, direction) =>
+      dispatchProps.sortByField(stateProps.collection, key, direction),
+    onFilterClick: filter => dispatchProps.filterByField(stateProps.collection, filter),
+    onGroupClick: group => dispatchProps.groupByField(stateProps.collection, group),
+    onChangeViewStyle: viewStyle => dispatchProps.changeViewStyle(viewStyle),
+  };
+};
+
+const ConnectedCollection = connect(mapStateToProps, mapDispatchToProps, mergeProps)(Collection);
+
+export default translate()(ConnectedCollection);

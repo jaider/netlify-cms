@@ -1,11 +1,17 @@
-import { resolveBackend, Backend } from '../backend';
+import {
+  resolveBackend,
+  Backend,
+  extractSearchFields,
+  expandSearchEntries,
+  mergeExpandedEntries,
+} from '../backend';
 import registry from 'Lib/registry';
 import { FOLDER } from 'Constants/collectionTypes';
 import { Map, List, fromJS } from 'immutable';
+import { FILES } from '../constants/collectionTypes';
 
 jest.mock('Lib/registry');
 jest.mock('netlify-cms-lib-util');
-jest.mock('Formats/formats');
 jest.mock('../lib/urlHelper');
 
 describe('Backend', () => {
@@ -115,7 +121,9 @@ describe('Backend', () => {
   });
 
   describe('getLocalDraftBackup', () => {
-    const { localForage } = require('netlify-cms-lib-util');
+    const { localForage, asyncLock } = require('netlify-cms-lib-util');
+
+    asyncLock.mockImplementation(() => ({ acquire: jest.fn(), release: jest.fn() }));
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -179,23 +187,27 @@ describe('Backend', () => {
       const slug = 'slug';
 
       localForage.getItem.mockReturnValue({
-        raw: 'content',
+        raw: '---\ntitle: "Hello World"\n---\n',
       });
 
       const result = await backend.getLocalDraftBackup(collection, slug);
 
       expect(result).toEqual({
         entry: {
+          author: '',
           mediaFiles: [],
           collection: 'posts',
           slug: 'slug',
           path: '',
           partial: false,
-          raw: 'content',
-          data: {},
+          raw: '---\ntitle: "Hello World"\n---\n',
+          data: { title: 'Hello World' },
+          meta: {},
+          i18n: {},
           label: null,
-          metaData: null,
           isModification: null,
+          status: '',
+          updatedOn: '',
         },
       });
       expect(localForage.getItem).toHaveBeenCalledTimes(1);
@@ -216,7 +228,7 @@ describe('Backend', () => {
       const slug = 'slug';
 
       localForage.getItem.mockReturnValue({
-        raw: 'content',
+        raw: '---\ntitle: "Hello World"\n---\n',
         mediaFiles: [{ id: '1' }],
       });
 
@@ -224,16 +236,20 @@ describe('Backend', () => {
 
       expect(result).toEqual({
         entry: {
+          author: '',
           mediaFiles: [{ id: '1' }],
           collection: 'posts',
           slug: 'slug',
           path: '',
           partial: false,
-          raw: 'content',
-          data: {},
+          raw: '---\ntitle: "Hello World"\n---\n',
+          data: { title: 'Hello World' },
+          meta: {},
+          i18n: {},
           label: null,
-          metaData: null,
           isModification: null,
+          status: '',
+          updatedOn: '',
         },
       });
       expect(localForage.getItem).toHaveBeenCalledTimes(1);
@@ -339,38 +355,50 @@ describe('Backend', () => {
   describe('unpublishedEntry', () => {
     it('should return unpublished entry', async () => {
       const unpublishedEntryResult = {
-        file: { path: 'path' },
-        isModification: true,
-        metaData: {},
-        mediaFiles: [{ id: '1' }],
-        data: 'content',
+        diffs: [{ path: 'src/posts/index.md', newFile: false }, { path: 'netlify.png' }],
       };
       const implementation = {
         init: jest.fn(() => implementation),
         unpublishedEntry: jest.fn().mockResolvedValue(unpublishedEntryResult),
+        unpublishedEntryDataFile: jest
+          .fn()
+          .mockResolvedValueOnce('---\ntitle: "Hello World"\n---\n'),
+        unpublishedEntryMediaFile: jest.fn().mockResolvedValueOnce({ id: '1' }),
       };
-      const config = Map({});
+      const config = Map({ media_folder: 'static/images' });
 
       const backend = new Backend(implementation, { config, backendName: 'github' });
 
-      const collection = Map({
+      const collection = fromJS({
         name: 'posts',
+        folder: 'src/posts',
+        fields: [],
       });
+
+      const state = {
+        config,
+        integrations: Map({}),
+        mediaLibrary: Map({}),
+      };
 
       const slug = 'slug';
 
-      const result = await backend.unpublishedEntry(collection, slug);
+      const result = await backend.unpublishedEntry(state, collection, slug);
       expect(result).toEqual({
+        author: '',
         collection: 'posts',
         slug: '',
-        path: 'path',
+        path: 'src/posts/index.md',
         partial: false,
-        raw: 'content',
-        data: {},
+        raw: '---\ntitle: "Hello World"\n---\n',
+        data: { title: 'Hello World' },
+        meta: { path: 'src/posts/index.md' },
+        i18n: {},
         label: null,
-        metaData: {},
         isModification: true,
-        mediaFiles: [{ id: '1' }],
+        mediaFiles: [{ id: '1', draft: true }],
+        status: '',
+        updatedOn: '',
       });
     });
   });
@@ -452,6 +480,467 @@ describe('Backend', () => {
       await expect(backend.generateUniqueSlug(collection, entry, Map({}), [])).resolves.toBe(
         'sub_dir/some-post-title-1',
       );
+    });
+  });
+
+  describe('extractSearchFields', () => {
+    it('should extract slug', () => {
+      expect(extractSearchFields(['slug'])({ slug: 'entry-slug', data: {} })).toEqual(
+        ' entry-slug',
+      );
+    });
+
+    it('should extract path', () => {
+      expect(extractSearchFields(['path'])({ path: 'entry-path', data: {} })).toEqual(
+        ' entry-path',
+      );
+    });
+
+    it('should extract fields', () => {
+      expect(
+        extractSearchFields(['title', 'order'])({ data: { title: 'Entry Title', order: 5 } }),
+      ).toEqual(' Entry Title 5');
+    });
+
+    it('should extract nested fields', () => {
+      expect(
+        extractSearchFields(['nested.title'])({ data: { nested: { title: 'nested title' } } }),
+      ).toEqual(' nested title');
+    });
+  });
+
+  describe('search/query', () => {
+    const collections = [
+      fromJS({
+        name: 'posts',
+        folder: 'posts',
+        fields: [
+          { name: 'title', widget: 'string' },
+          { name: 'short_title', widget: 'string' },
+          { name: 'author', widget: 'string' },
+          { name: 'description', widget: 'string' },
+          { name: 'nested', widget: 'object', fields: { name: 'title', widget: 'string' } },
+        ],
+      }),
+      fromJS({
+        name: 'pages',
+        folder: 'pages',
+        fields: [
+          { name: 'title', widget: 'string' },
+          { name: 'short_title', widget: 'string' },
+          { name: 'author', widget: 'string' },
+          { name: 'description', widget: 'string' },
+          { name: 'nested', widget: 'object', fields: { name: 'title', widget: 'string' } },
+        ],
+      }),
+    ];
+
+    const posts = [
+      {
+        path: 'posts/find-me.md',
+        slug: 'find-me',
+        data: {
+          title: 'find me by title',
+          short_title: 'find me by short title',
+          author: 'find me by author',
+          description: 'find me by description',
+          nested: { title: 'find me by nested title' },
+        },
+      },
+      { path: 'posts/not-me.md', slug: 'not-me', data: { title: 'not me' } },
+    ];
+
+    const pages = [
+      {
+        path: 'pages/find-me.md',
+        slug: 'find-me',
+        data: {
+          title: 'find me by title',
+          short_title: 'find me by short title',
+          author: 'find me by author',
+          description: 'find me by description',
+          nested: { title: 'find me by nested title' },
+        },
+      },
+      { path: 'pages/not-me.md', slug: 'not-me', data: { title: 'not me' } },
+    ];
+
+    const files = [
+      {
+        path: 'files/file1.md',
+        slug: 'file1',
+        data: {
+          author: 'find me by author',
+        },
+      },
+      {
+        path: 'files/file2.md',
+        slug: 'file2',
+        data: {
+          other: 'find me by other',
+        },
+      },
+    ];
+
+    const implementation = {
+      init: jest.fn(() => implementation),
+    };
+    const config = Map({});
+
+    let backend;
+    beforeEach(() => {
+      backend = new Backend(implementation, { config, backendName: 'github' });
+      backend.listAllEntries = jest.fn(collection => {
+        if (collection.get('name') === 'posts') {
+          return Promise.resolve(posts);
+        }
+        if (collection.get('name') === 'pages') {
+          return Promise.resolve(pages);
+        }
+        if (collection.get('name') === 'files') {
+          return Promise.resolve(files);
+        }
+        return Promise.resolve([]);
+      });
+    });
+
+    it('should search collections by title', async () => {
+      const results = await backend.search(collections, 'find me by title');
+
+      expect(results).toEqual({
+        entries: [posts[0], pages[0]],
+      });
+    });
+
+    it('should search collections by short title', async () => {
+      const results = await backend.search(collections, 'find me by short title');
+
+      expect(results).toEqual({
+        entries: [posts[0], pages[0]],
+      });
+    });
+
+    it('should search collections by author', async () => {
+      const results = await backend.search(collections, 'find me by author');
+
+      expect(results).toEqual({
+        entries: [posts[0], pages[0]],
+      });
+    });
+
+    it('should search collections by summary description', async () => {
+      const results = await backend.search(
+        collections.map(c => c.set('summary', '{{description}}')),
+        'find me by description',
+      );
+
+      expect(results).toEqual({
+        entries: [posts[0], pages[0]],
+      });
+    });
+
+    it('should search in file collection using top level fields', async () => {
+      const collections = [
+        fromJS({
+          name: 'files',
+          files: [
+            {
+              name: 'file1',
+              fields: [{ name: 'author', widget: 'string' }],
+            },
+            {
+              name: 'file2',
+              fields: [{ name: 'other', widget: 'string' }],
+            },
+          ],
+          type: FILES,
+        }),
+      ];
+
+      expect(await backend.search(collections, 'find me by author')).toEqual({
+        entries: [files[0]],
+      });
+      expect(await backend.search(collections, 'find me by other')).toEqual({
+        entries: [files[1]],
+      });
+    });
+
+    it('should query collections by title', async () => {
+      const results = await backend.query(collections[0], ['title'], 'find me by title');
+
+      expect(results).toEqual({
+        hits: [posts[0]],
+        query: 'find me by title',
+      });
+    });
+
+    it('should query collections by slug', async () => {
+      const results = await backend.query(collections[0], ['slug'], 'find-me');
+
+      expect(results).toEqual({
+        hits: [posts[0]],
+        query: 'find-me',
+      });
+    });
+
+    it('should query collections by path', async () => {
+      const results = await backend.query(collections[0], ['path'], 'posts/find-me.md');
+
+      expect(results).toEqual({
+        hits: [posts[0]],
+        query: 'posts/find-me.md',
+      });
+    });
+
+    it('should query collections by nested field', async () => {
+      const results = await backend.query(
+        collections[0],
+        ['nested.title'],
+        'find me by nested title',
+      );
+
+      expect(results).toEqual({
+        hits: [posts[0]],
+        query: 'find me by nested title',
+      });
+    });
+  });
+
+  describe('expandSearchEntries', () => {
+    it('should expand entry with list to multiple entries', () => {
+      const entry = {
+        data: {
+          field: {
+            nested: {
+              list: [
+                { id: 1, name: '1' },
+                { id: 2, name: '2' },
+              ],
+            },
+          },
+          list: [1, 2],
+        },
+      };
+
+      expect(expandSearchEntries([entry], ['list.*', 'field.nested.list.*.name'])).toEqual([
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'list.0',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'list.1',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.0.name',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.1.name',
+        },
+      ]);
+    });
+  });
+
+  describe('mergeExpandedEntries', () => {
+    it('should merge entries and filter data', () => {
+      const expanded = [
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                  { id: 3, name: '3' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.0.name',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                  { id: 3, name: '3' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.3.name',
+        },
+      ];
+
+      expect(mergeExpandedEntries(expanded)).toEqual([
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+        },
+      ]);
+    });
+
+    it('should merge entries and filter data based on different fields', () => {
+      const expanded = [
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                  { id: 3, name: '3' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.0.name',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                  { id: 3, name: '3' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'field.nested.list.3.name',
+        },
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 2, name: '2' },
+                  { id: 3, name: '3' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [1, 2],
+          },
+          field: 'list.1',
+        },
+      ];
+
+      expect(mergeExpandedEntries(expanded)).toEqual([
+        {
+          data: {
+            field: {
+              nested: {
+                list: [
+                  { id: 1, name: '1' },
+                  { id: 4, name: '4' },
+                ],
+              },
+            },
+            list: [2],
+          },
+        },
+      ]);
+    });
+
+    it('should merge entries and keep sort by entry index', () => {
+      const expanded = [
+        {
+          data: {
+            list: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+          },
+          field: 'list.5',
+        },
+        {
+          data: {
+            list: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+          },
+          field: 'list.0',
+        },
+        {
+          data: {
+            list: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+          },
+          field: 'list.11',
+        },
+        {
+          data: {
+            list: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+          },
+          field: 'list.1',
+        },
+      ];
+
+      expect(mergeExpandedEntries(expanded)).toEqual([
+        {
+          data: {
+            list: [5, 0, 11, 1],
+          },
+        },
+      ]);
     });
   });
 });

@@ -33,6 +33,11 @@ const ru = {
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'необязательный',
+      },
+    },
     editorControlPane: {
       widget: {
         required: 'Необходимо указать значение поля %{fieldLabel}.',
@@ -91,11 +96,29 @@ const ru = {
       deployButtonLabel: 'Просмотр',
     },
     editorWidgets: {
+      image: {
+        choose: 'Выберите изображение',
+        chooseDifferent: 'Выберите другое изображение',
+        remove: 'Удалить изображение',
+      },
+      file: {
+        choose: 'Выберите файл',
+        chooseDifferent: 'Выберите другой файл',
+        remove: 'Удалить файл',
+      },
       unknownControl: {
         noControl: "Нет контрола для виджета '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Нет превью для виджета '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
       },
     },
   },
@@ -116,7 +139,7 @@ const ru = {
       mediaAssets: 'Медиаресурсы',
       search: 'Идёт поиск…',
       uploading: 'Загрузка…',
-      uploadNew: 'Загрузить новый',
+      upload: 'Загрузить новый',
       deleting: 'Удаление…',
       deleteSelected: 'Удалить помеченные',
       chooseSelected: 'Выбрать помеченные',
@@ -162,6 +185,7 @@ const ru = {
       newPost: 'Новая запись',
       description:
         'Число записей, ожидающих проверки — %{smart_count}, готовых к публикации — %{readyCount}. |||| Число записей, ожидающих проверки — %{smart_count}, готовых к публикации — %{readyCount}. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date}, %{author}',

@@ -13,19 +13,17 @@ import { markdownToHtml } from '../serializers';
 import { editorStyleVars, EditorControlBar } from '../styles';
 import Toolbar from './Toolbar';
 
-const styleStrings = {
-  slateRaw: `
-    position: relative;
-    overflow: hidden;
-    overflow-x: auto;
-    min-height: ${lengths.richTextEditorMinHeight};
-    font-family: ${fonts.mono};
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-    border-top: 0;
-    margin-top: -${editorStyleVars.stickyDistanceBottom};
-  `,
-};
+const rawEditorStyles = ({ minimal }) => `
+  position: relative;
+  overflow: hidden;
+  overflow-x: auto;
+  min-height: ${minimal ? 'auto' : lengths.richTextEditorMinHeight};
+  font-family: ${fonts.mono};
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 0;
+  margin-top: -${editorStyleVars.stickyDistanceBottom};
+`;
 
 const RawEditorContainer = styled.div`
   position: relative;
@@ -40,7 +38,16 @@ export default class RawEditor extends React.Component {
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    return !this.state.value.equals(nextState.value);
+    return (
+      !this.state.value.equals(nextState.value) ||
+      nextProps.value !== Plain.serialize(nextState.value)
+    );
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.value !== this.props.value) {
+      this.setState({ value: Plain.deserialize(this.props.value) });
+    }
   }
 
   componentDidMount() {
@@ -50,18 +57,17 @@ export default class RawEditor extends React.Component {
     }
   }
 
-  handleCopy = async (event, editor) => {
-    event.persist();
+  handleCopy = (event, editor) => {
     const { getAsset, resolveWidget } = this.props;
     const markdown = Plain.serialize(Value.create({ document: editor.value.fragment }));
-    const html = await markdownToHtml(markdown, { getAsset, resolveWidget });
+    const html = markdownToHtml(markdown, { getAsset, resolveWidget });
     setEventTransfer(event, 'text', markdown);
     setEventTransfer(event, 'html', html);
     event.preventDefault();
   };
 
-  handleCut = async (event, editor, next) => {
-    await this.handleCopy(event, editor, next);
+  handleCut = (event, editor, next) => {
+    this.handleCopy(event, editor, next);
     editor.delete();
   };
 
@@ -93,7 +99,7 @@ export default class RawEditor extends React.Component {
   }, 150);
 
   handleToggleMode = () => {
-    this.props.onMode('visual');
+    this.props.onMode('rich_text');
   };
 
   processRef = ref => {
@@ -101,7 +107,7 @@ export default class RawEditor extends React.Component {
   };
 
   render() {
-    const { className, field } = this.props;
+    const { className, field, isShowModeToggle, t } = this.props;
     return (
       <RawEditorContainer>
         <EditorControlBar>
@@ -110,6 +116,8 @@ export default class RawEditor extends React.Component {
             buttons={field.get('buttons')}
             disabled
             rawMode
+            isShowModeToggle={isShowModeToggle}
+            t={t}
           />
         </EditorControlBar>
         <ClassNames>
@@ -118,7 +126,7 @@ export default class RawEditor extends React.Component {
               className={cx(
                 className,
                 css`
-                  ${styleStrings.slateRaw}
+                  ${rawEditorStyles({ minimal: field.get('minimal') })}
                 `,
               )}
               value={this.state.value}
@@ -141,4 +149,6 @@ RawEditor.propTypes = {
   className: PropTypes.string.isRequired,
   value: PropTypes.string,
   field: ImmutablePropTypes.map.isRequired,
+  isShowModeToggle: PropTypes.bool.isRequired,
+  t: PropTypes.func.isRequired,
 };

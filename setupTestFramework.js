@@ -1,8 +1,13 @@
-/* eslint-disable emotion/no-vanilla */
+/* eslint-disable @emotion/no-vanilla */
 import '@testing-library/jest-dom/extend-expect';
 import fetch from 'node-fetch';
-import * as emotion from 'emotion';
-import { createSerializer } from 'jest-emotion';
+
+jest.mock('path', () => {
+  const actual = jest.requireActual('path');
+  return {
+    ...actual.posix,
+  };
+});
 
 window.fetch = fetch;
-expect.addSnapshotSerializer(createSerializer(emotion));
+window.URL.createObjectURL = jest.fn();

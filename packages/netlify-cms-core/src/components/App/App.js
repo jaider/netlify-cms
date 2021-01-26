@@ -8,7 +8,6 @@ import { connect } from 'react-redux';
 import { Route, Switch, Redirect } from 'react-router-dom';
 import { Notifs } from 'redux-notifications';
 import TopBarProgress from 'react-topbar-progress-indicator';
-import { loadConfig } from 'Actions/config';
 import { loginUser, logoutUser } from 'Actions/auth';
 import { currentBackend } from 'coreSrc/backend';
 import { createNewEntry } from 'Actions/collections';
@@ -50,7 +49,12 @@ const ErrorCodeBlock = styled.pre`
 `;
 
 const getDefaultPath = collections => {
-  return `/collections/${collections.first().get('name')}`;
+  const first = collections.filter(collection => collection.get('hide') !== true).first();
+  if (first) {
+    return `/collections/${first.get('name')}`;
+  } else {
+    throw new Error('Could not find a non hidden collection');
+  }
 };
 
 const RouteInCollection = ({ collections, render, ...props }) => {
@@ -68,13 +72,12 @@ const RouteInCollection = ({ collections, render, ...props }) => {
 
 class App extends React.Component {
   static propTypes = {
-    auth: ImmutablePropTypes.map,
+    auth: PropTypes.object.isRequired,
     config: ImmutablePropTypes.map,
     collections: ImmutablePropTypes.orderedMap,
-    loadConfig: PropTypes.func.isRequired,
     loginUser: PropTypes.func.isRequired,
     logoutUser: PropTypes.func.isRequired,
-    user: ImmutablePropTypes.map,
+    user: PropTypes.object,
     isFetching: PropTypes.bool.isRequired,
     publishMode: PropTypes.oneOf([SIMPLE, EDITORIAL_WORKFLOW]),
     siteId: PropTypes.string,
@@ -98,11 +101,6 @@ class App extends React.Component {
     );
   }
 
-  componentDidMount() {
-    const { loadConfig } = this.props;
-    loadConfig();
-  }
-
   handleLogin(credentials) {
     this.props.loginUser(credentials);
   }
@@ -124,9 +122,8 @@ class App extends React.Component {
         <Notifs CustomComponent={Toast} />
         {React.createElement(backend.authComponent(), {
           onLogin: this.handleLogin.bind(this),
-          error: auth && auth.get('error'),
-          isFetching: auth && auth.get('isFetching'),
-          inProgress: (auth && auth.get('isFetching')) || false,
+          error: auth.error,
+          inProgress: auth.isFetching,
           siteId: this.props.config.getIn(['backend', 'site_domain']),
           base_url: this.props.config.getIn(['backend', 'base_url'], null),
           authEndpoint: this.props.config.getIn(['backend', 'auth_endpoint']),
@@ -195,6 +192,18 @@ class App extends React.Component {
           <Switch>
             <Redirect exact from="/" to={defaultPath} />
             <Redirect exact from="/search/" to={defaultPath} />
+            <RouteInCollection
+              exact
+              collections={collections}
+              path="/collections/:name/search/"
+              render={({ match }) => <Redirect to={`/collections/${match.params.name}`} />}
+            />
+            <Redirect
+              // This happens on Identity + Invite Only + External Provider email not matching
+              // the registered user
+              from="/error=access_denied&error_description=Signups+not+allowed+for+this+instance"
+              to={defaultPath}
+            />
             {hasWorkflow ? <Route path="/workflow" component={Workflow} /> : null}
             <RouteInCollection
               exact
@@ -212,16 +221,26 @@ class App extends React.Component {
               collections={collections}
               render={props => <Editor {...props} />}
             />
+            <RouteInCollection
+              path="/collections/:name/search/:searchTerm"
+              collections={collections}
+              render={props => <Collection {...props} isSearchResults isSingleSearchResult />}
+            />
+            <RouteInCollection
+              collections={collections}
+              path="/collections/:name/filter/:filterTerm*"
+              render={props => <Collection {...props} />}
+            />
             <Route
               path="/search/:searchTerm"
               render={props => <Collection {...props} isSearchResults />}
             />
             <RouteInCollection
-              path="/edit/:collectionName/:entryName"
+              path="/edit/:name/:entryName"
               collections={collections}
               render={({ match }) => {
-                const { collectionName, entryName } = match.params;
-                return <Redirect to={`/collections/${collectionName}/entries/${entryName}`} />;
+                const { name, entryName } = match.params;
+                return <Redirect to={`/collections/${name}/entries/${entryName}`} />;
               }}
             />
             <Route component={NotFoundPage} />
@@ -235,7 +254,7 @@ class App extends React.Component {
 
 function mapStateToProps(state) {
   const { auth, config, collections, globalUI, mediaLibrary } = state;
-  const user = auth && auth.get('user');
+  const user = auth.user;
   const isFetching = globalUI.get('isFetching');
   const publishMode = config && config.get('publish_mode');
   const useMediaLibrary = !mediaLibrary.get('externalLibrary');
@@ -254,7 +273,6 @@ function mapStateToProps(state) {
 
 const mapDispatchToProps = {
   openMediaLibrary,
-  loadConfig,
   loginUser,
   logoutUser,
 };

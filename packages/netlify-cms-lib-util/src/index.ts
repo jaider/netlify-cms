@@ -1,12 +1,13 @@
 import APIError from './APIError';
 import Cursor, { CURSOR_COMPATIBILITY_SYMBOL } from './Cursor';
 import EditorialWorkflowError, { EDITORIAL_WORKFLOW_ERROR } from './EditorialWorkflowError';
+import AccessTokenError from './AccessTokenError';
 import localForage from './localForage';
 import { isAbsolutePath, basename, fileExtensionWithSeparator, fileExtension } from './path';
 import { onlySuccessfulPromises, flowAsync, then } from './promise';
 import unsentRequest from './unsentRequest';
 import {
-  filterByPropExtension,
+  filterByExtension,
   getAllResponses,
   parseLinkHeader,
   parseResponse,
@@ -19,6 +20,8 @@ import { asyncLock, AsyncLock as AL } from './asyncLock';
 import {
   Implementation as I,
   ImplementationEntry as IE,
+  UnpublishedEntryDiff as UED,
+  UnpublishedEntry as UE,
   ImplementationMediaFile as IMF,
   ImplementationFile as IF,
   DisplayURLObject as DUO,
@@ -36,9 +39,22 @@ import {
   runWithLock,
   Config as C,
   UnpublishedEntryMediaFile as UEMF,
+  blobToFileObj,
+  allEntriesByFolder,
+  DataFile as DF,
 } from './implementation';
 import {
   readFile,
+  readFileMetadata,
+  isPreviewContext,
+  getPreviewStatus,
+  PreviewState,
+  FetchError as FE,
+  ApiRequest as AR,
+  requestWithBackoff,
+  throwOnConflictingBranches,
+} from './API';
+import {
   CMS_BRANCH_PREFIX,
   generateContentKey,
   isCMSLabel,
@@ -46,14 +62,10 @@ import {
   statusToLabel,
   DEFAULT_PR_BODY,
   MERGE_COMMIT_MESSAGE,
-  isPreviewContext,
-  getPreviewStatus,
-  PreviewState,
-  FetchError as FE,
   parseContentKey,
   branchFromContentKey,
   contentKeyFromBranch,
-} from './API';
+} from './APIUtils';
 import {
   createPointerFile,
   getLargeMediaFilteredMediaFiles,
@@ -66,6 +78,8 @@ import {
 export type AsyncLock = AL;
 export type Implementation = I;
 export type ImplementationEntry = IE;
+export type UnpublishedEntryDiff = UED;
+export type UnpublishedEntry = UE;
 export type ImplementationMediaFile = IMF;
 export type ImplementationFile = IF;
 export type DisplayURL = DU;
@@ -76,19 +90,11 @@ export type Entry = E;
 export type UnpublishedEntryMediaFile = UEMF;
 export type PersistOptions = PO;
 export type AssetProxy = AP;
-export type ApiRequest =
-  | {
-      url: string;
-      params?: Record<string, string | boolean | number>;
-      method?: 'POST' | 'PUT' | 'DELETE' | 'HEAD';
-      headers?: Record<string, string>;
-      body?: string | FormData;
-      cache?: 'no-store';
-    }
-  | string;
+export type ApiRequest = AR;
 export type Config = C;
 export type FetchError = FE;
 export type PointerFile = PF;
+export type DataFile = DF;
 
 export const NetlifyCmsLibUtil = {
   APIError,
@@ -104,7 +110,7 @@ export const NetlifyCmsLibUtil = {
   flowAsync,
   then,
   unsentRequest,
-  filterByPropExtension,
+  filterByExtension,
   parseLinkHeader,
   parseResponse,
   responseParser,
@@ -117,6 +123,7 @@ export const NetlifyCmsLibUtil = {
   getMediaDisplayURL,
   getMediaAsBlob,
   readFile,
+  readFileMetadata,
   CMS_BRANCH_PREFIX,
   generateContentKey,
   isCMSLabel,
@@ -136,6 +143,11 @@ export const NetlifyCmsLibUtil = {
   getPointerFileForMediaFileObj,
   branchFromContentKey,
   contentKeyFromBranch,
+  blobToFileObj,
+  requestWithBackoff,
+  allEntriesByFolder,
+  AccessTokenError,
+  throwOnConflictingBranches,
 };
 export {
   APIError,
@@ -151,7 +163,7 @@ export {
   flowAsync,
   then,
   unsentRequest,
-  filterByPropExtension,
+  filterByExtension,
   parseLinkHeader,
   getAllResponses,
   parseResponse,
@@ -167,6 +179,7 @@ export {
   getMediaDisplayURL,
   getMediaAsBlob,
   readFile,
+  readFileMetadata,
   CMS_BRANCH_PREFIX,
   generateContentKey,
   isCMSLabel,
@@ -186,4 +199,9 @@ export {
   getPointerFileForMediaFileObj,
   branchFromContentKey,
   contentKeyFromBranch,
+  blobToFileObj,
+  requestWithBackoff,
+  allEntriesByFolder,
+  AccessTokenError,
+  throwOnConflictingBranches,
 };

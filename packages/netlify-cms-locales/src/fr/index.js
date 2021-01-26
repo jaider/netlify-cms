@@ -1,4 +1,18 @@
 const fr = {
+  auth: {
+    login: 'Se connecter',
+    loggingIn: 'Connexion en cours...',
+    loginWithNetlifyIdentity: 'Se connecter avec Netlify Identity',
+    loginWithBitbucket: 'Se connecter avec Bitbucket',
+    loginWithGitHub: 'Se connecter avec GitHub',
+    loginWithGitLab: 'Se connecter avec GitLab',
+    errors: {
+      email: "Assurez-vous d'avoir entré votre email.",
+      password: 'Merci de saisir votre mot de passe.',
+      identitySettings:
+        "Impsosible d'accéder aux paramètres d'identité. Si vous utilisez le backend git-gateway, merci de vous assurer que vous avez bien activé le service Identity et la passerelle Git.",
+    },
+  },
   app: {
     header: {
       content: 'Contenus',
@@ -20,19 +34,42 @@ const fr = {
   collection: {
     sidebar: {
       collections: 'Collections',
+      allCollections: 'Toutes les collections',
       searchAll: 'Tout rechercher',
+      searchIn: 'Rechercher dans',
     },
     collectionTop: {
+      sortBy: 'Trier par',
       viewAs: 'Voir comme',
       newButton: 'Créer une entrée de type %{collectionLabel}',
+      ascending: 'Croissant',
+      descending: 'Décroissant',
+      searchResults: 'Résultats de la recherche pour "%{searchTerm}"',
+      searchResultsInCollection:
+        'Résultats de la recherche pour "%{searchTerm}" dans %{collection}',
+      filterBy: 'Filtrer par',
     },
     entries: {
       loadingEntries: 'Chargement des entrées',
       cachingEntries: 'Mise en cache des entrées',
       longerLoading: 'Cela peut prendre quelques minutes',
+      noEntries: 'Aucune entrée',
+    },
+    defaultFields: {
+      author: {
+        label: 'Auteur',
+      },
+      updatedOn: {
+        label: 'Mis à jour le',
+      },
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'optionnel',
+      },
+    },
     editorControlPane: {
       widget: {
         required: 'Le champ %{fieldLabel} est requis.',
@@ -41,6 +78,12 @@ const fr = {
         range: 'Le champ %{fieldLabel} doit être compris entre %{minValue} et %{maxValue}.',
         min: 'Le champ %{fieldLabel} doit avoir une valeur de %{minValue} ou plus.',
         max: 'Le champ %{fieldLabel} doit avoir une valeur de %{maxValue} ou moins.',
+        rangeCount: '%{fieldLabel} doit avoir entre %{minCount} et %{maxCount} élément(s).',
+        rangeCountExact: '%{fieldLabel} doit avoir exactement %{count} éléments(s).',
+        minCount: '%{fieldLabel} doit avoir au moins %{minCount} éléments(s).',
+        maxCount: '%{fieldLabel} doit avoir %{maxCount} éléments(s) ou moins.',
+        invalidPath: `'%{path}' n'est pas un chemin valide`,
+        pathExists: `Le chemin '%{path}' existe déjà`,
       },
     },
     editor: {
@@ -65,7 +108,11 @@ const fr = {
       publishing: 'Publication...',
       publish: 'Publier',
       published: 'Publiée',
+      unpublish: 'Dépublier',
+      duplicate: 'Dupliquer',
+      unpublishing: 'Dépublication...',
       publishAndCreateNew: 'Publier et créer une nouvelle entrée',
+      publishAndDuplicate: 'Publier et dupliquer',
       deleteUnpublishedChanges: 'Supprimer les modications non publiées',
       deleteUnpublishedEntry: "Supprimer l'entrée non publiée",
       deletePublishedEntry: "Supprimer l'entrée publiée",
@@ -87,11 +134,36 @@ const fr = {
       deployButtonLabel: 'Voir en direct',
     },
     editorWidgets: {
+      markdown: {
+        richText: 'Texte enrichi',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Choisissez une image',
+        chooseDifferent: 'Choisissez une image différente',
+        remove: "Supprimer l'image",
+      },
+      file: {
+        choose: 'Choisissez un fichier',
+        chooseDifferent: 'Choisissez un fichier différent',
+        remove: 'Effacer le fichier',
+      },
       unknownControl: {
         noControl: "Pas de contrôle pour le gadget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Pas d'aperçu pour le gadget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Titre 1',
+        headingTwo: 'Titre 2',
+        headingThree: 'Titre 3',
+        headingFour: 'Titre 4',
+        headingFive: 'Titre 5',
+        headingSix: 'Titre 6',
+      },
+      datetime: {
+        now: 'Maintenant',
       },
     },
   },
@@ -101,6 +173,8 @@ const fr = {
     },
     mediaLibrary: {
       onDelete: 'Voulez-vous vraiment supprimer la ressource sélectionné ?',
+      fileTooLarge:
+        "Le fichier est trop volumineux.\nL'instance est configurée pour bloquer les envois de plus de %{size} kB.",
     },
     mediaLibraryModal: {
       loading: 'Chargement...',
@@ -112,18 +186,24 @@ const fr = {
       mediaAssets: 'Ressources',
       search: 'Recherche...',
       uploading: 'Téléversement...',
-      uploadNew: 'Téléverser une nouvelle ressource',
+      upload: 'Téléverser une nouvelle ressource',
+      download: 'Télécharger',
       deleting: 'Suppression...',
       deleteSelected: 'Supprimer les éléments sélectionnés',
       chooseSelected: 'Choisir les éléments sélectionnés',
     },
   },
   ui: {
+    default: {
+      goBackToSite: 'Retourner sur le site',
+    },
     errorBoundary: {
       title: 'Erreur',
       details: 'Une erreur est survenue, veuillez ',
       reportIt: 'la signaler.',
       detailsHeading: 'Détails',
+      privacyWarning:
+        "Ouvrir une issue la préremplie avec le message d'erreur et des données de déboggage.\nMerci de vérifier l'exactitude des informations et de supprimer toute donnée sensible si nécessaire.",
       recoveredEntry: {
         heading: 'Document récupéré',
         warning: 'Veuillez copier/coller ceci quelque part avant de naviguer ailleurs!',
@@ -134,19 +214,24 @@ const fr = {
       logOut: 'Déconnexion',
     },
     toast: {
-      onFailToLoadEntries: "Échec du chargement de l'entrée: %{details}",
-      onFailToLoadDeployPreview: "Échec du chargement de l'aperçu: %{details}",
-      onFailToPersist: "Échec de l'enregistrement de l'entrée: %{details}",
-      onFailToDelete: "Échec de la suppression de l'entrée: %{details}",
-      onFailToUpdateStatus: 'Échec de la mise à jour du statut: %{details}',
+      onFailToLoadEntries: "Échec du chargement de l'entrée : %{details}",
+      onFailToLoadDeployPreview: "Échec du chargement de l'aperçu : %{details}",
+      onFailToPersist: "Échec de l'enregistrement de l'entrée : %{details}",
+      onFailToDelete: "Échec de la suppression de l'entrée : %{details}",
+      onFailToUpdateStatus: 'Échec de la mise à jour du statut : %{details}',
       missingRequiredField:
         'Oops, il manque un champ requis. Veuillez le renseigner avant de soumettre.',
       entrySaved: 'Entrée enregistrée',
       entryPublished: 'Entrée publiée',
-      onFailToPublishEntry: 'Échec de la publication: %{details}',
+      entryUnpublished: 'Entrée dépubliée',
+      onFailToPublishEntry: 'Échec de la publication : %{details}',
+      onFailToUnpublishEntry: "Impossible de dépublier l'entrée : %{details}",
       entryUpdated: "Statut de l'entrée mis à jour",
       onDeleteUnpublishedChanges: 'Modifications non publiées supprimées',
       onFailToAuth: '%{details}',
+      onLoggedOut: 'Vous avez été déconnecté, merci de sauvegarder les données et vous reconnecter',
+      onBackendDown:
+        "Le serveur est actuellement hors-service. Pour plus d'informations : %{details}",
     },
   },
   workflow: {
@@ -156,6 +241,7 @@ const fr = {
       newPost: 'Nouvel article',
       description:
         '%{smart_count} entrée en attente de revue, %{readyCount} prête(s) à être publiée(s). |||| %{smart_count} entrées en attente de revue, %{readyCount} prête(s) à être publiée(s). ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} par %{author}',
@@ -169,7 +255,7 @@ const fr = {
     workflowList: {
       onDeleteEntry: 'Voulez-vous vraiment supprimer cette entrée ?',
       onPublishingNotReadyEntry:
-        'Seul les éléments ayant le statut "Prêt" peuvent être publiés. Veuillez glisser/déposer la carte dans la colonne "Prêt" pour activer la publication',
+        'Seuls les éléments ayant le statut "Prêt" peuvent être publiés. Veuillez glisser/déposer la carte dans la colonne "Prêt" pour activer la publication',
       onPublishEntry: 'Voulez-vous vraiment publier cette entrée ?',
       draftHeader: 'Brouillons',
       inReviewHeader: 'En cours de révision',

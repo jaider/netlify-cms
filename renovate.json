@@ -1,4 +1,6 @@
 {
   "extends": ["github>netlify/renovate-config:default"],
-  "ignorePaths": ["website/"]
+  "ignorePresets": [":prHourlyLimit2"],
+  "semanticCommits": true,
+  "masterIssue": true
 }

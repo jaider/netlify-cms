@@ -1,5 +1,5 @@
 import React from 'react';
-import Helmet from 'react-helmet';
+import { Helmet } from 'react-helmet';
 import { graphql } from 'gatsby';
 import { trimStart, trimEnd } from 'lodash';
 import { css } from '@emotion/core';
@@ -24,7 +24,7 @@ export const BlogPostTemplate = ({ title, author, date, body, html }) => (
       <MetaInfo>
         by {author} on {date}
       </MetaInfo>
-      <Markdown html={body || html} />
+      <Markdown body={body} html={html} />
     </Page>
   </Container>
 );

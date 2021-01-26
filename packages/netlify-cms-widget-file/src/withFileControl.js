@@ -6,15 +6,8 @@ import { Map, List } from 'immutable';
 import { once } from 'lodash';
 import uuid from 'uuid/v4';
 import { oneLine } from 'common-tags';
-import {
-  lengths,
-  components,
-  buttons,
-  borders,
-  effects,
-  shadows,
-  Asset,
-} from 'netlify-cms-ui-default';
+import { lengths, components, buttons, borders, effects, shadows } from 'netlify-cms-ui-default';
+import { basename } from 'netlify-cms-lib-util';
 
 const MAX_DISPLAY_LENGTH = 50;
 
@@ -31,15 +24,13 @@ const ImageWrapper = styled.div`
   ${shadows.inset};
 `;
 
-const Image = styled(({ value: src }) => <img src={src || ''} role="presentation" />)`
+const StyledImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: contain;
 `;
 
-const ImageAsset = ({ getAsset, value }) => {
-  return <Asset path={value} getAsset={getAsset} component={Image} />;
-};
+const Image = props => <StyledImage role="presentation" {...props} />;
 
 const MultiImageWrapper = styled.div`
   display: flex;
@@ -69,12 +60,12 @@ const FileLinkList = styled.ul`
 const FileWidgetButton = styled.button`
   ${buttons.button};
   ${components.badge};
+  margin-bottom: 12px;
 `;
 
 const FileWidgetButtonRemove = styled.button`
   ${buttons.button};
   ${components.badgeDanger};
-  margin-top: 12px;
 `;
 
 function isMultiple(value) {
@@ -103,7 +94,12 @@ export default function withFileControl({ forImage } = {}) {
       onClearMediaControl: PropTypes.func.isRequired,
       onRemoveMediaControl: PropTypes.func.isRequired,
       classNameWrapper: PropTypes.string.isRequired,
-      value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+      value: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.arrayOf(PropTypes.string),
+        ImmutablePropTypes.listOf(PropTypes.string),
+      ]),
+      t: PropTypes.func.isRequired,
     };
 
     static defaultProps = {
@@ -117,9 +113,9 @@ export default function withFileControl({ forImage } = {}) {
 
     shouldComponentUpdate(nextProps) {
       /**
-       * Always update if the value changes.
+       * Always update if the value or getAsset changes.
        */
-      if (this.props.value !== nextProps.value) {
+      if (this.props.value !== nextProps.value || this.props.getAsset !== nextProps.getAsset) {
         return true;
       }
 
@@ -174,13 +170,31 @@ export default function withFileControl({ forImage } = {}) {
         value,
         allowMultiple: !!mediaLibraryFieldOptions.get('allow_multiple', true),
         config: mediaLibraryFieldOptions.get('config'),
+        field,
       });
+    };
+
+    handleUrl = subject => e => {
+      e.preventDefault();
+
+      const url = window.prompt(this.props.t(`editor.editorWidgets.${subject}.promptUrl`));
+
+      return this.props.onChange(url);
     };
 
     handleRemove = e => {
       e.preventDefault();
       this.props.onClearMediaControl(this.controlID);
       return this.props.onChange('');
+    };
+
+    getValidateValue = () => {
+      const { value } = this.props;
+      if (value) {
+        return isMultiple(value) ? value.map(v => basename(v)) : basename(value);
+      }
+
+      return value;
     };
 
     renderFileLink = value => {
@@ -217,56 +231,70 @@ export default function withFileControl({ forImage } = {}) {
     };
 
     renderImages = () => {
-      const { getAsset, value } = this.props;
+      const { getAsset, value, field } = this.props;
+
       if (isMultiple(value)) {
         return (
           <MultiImageWrapper>
             {value.map(val => (
               <ImageWrapper key={val}>
-                <ImageAsset getAsset={getAsset} value={val} />
+                <Image src={getAsset(val, field) || ''} />
               </ImageWrapper>
             ))}
           </MultiImageWrapper>
         );
       }
+
+      const src = getAsset(value, field);
       return (
         <ImageWrapper>
-          <ImageAsset getAsset={getAsset} value={value} />
+          <Image src={src || ''} />
         </ImageWrapper>
       );
     };
 
-    renderSelection = subject => (
-      <div>
-        {forImage ? this.renderImages() : null}
+    renderSelection = subject => {
+      const { t } = this.props;
+      return (
         <div>
-          {forImage ? null : this.renderFileLinks()}
-          <FileWidgetButton onClick={this.handleChange}>
-            Choose different {subject}
-          </FileWidgetButton>
-          <FileWidgetButtonRemove onClick={this.handleRemove}>
-            Remove {subject}
-          </FileWidgetButtonRemove>
+          {forImage ? this.renderImages() : null}
+          <div>
+            {forImage ? null : this.renderFileLinks()}
+            <FileWidgetButton onClick={this.handleChange}>
+              {t(`editor.editorWidgets.${subject}.chooseDifferent`)}
+            </FileWidgetButton>
+            <FileWidgetButton onClick={this.handleUrl(subject)}>
+              {t(`editor.editorWidgets.${subject}.replaceUrl`)}
+            </FileWidgetButton>
+            <FileWidgetButtonRemove onClick={this.handleRemove}>
+              {t(`editor.editorWidgets.${subject}.remove`)}
+            </FileWidgetButtonRemove>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
 
-    renderNoSelection = (subject, article) => (
-      <FileWidgetButton onClick={this.handleChange}>
-        Choose {article} {subject}
-      </FileWidgetButton>
-    );
+    renderNoSelection = subject => {
+      const { t } = this.props;
+      return (
+        <>
+          <FileWidgetButton onClick={this.handleChange}>
+            {t(`editor.editorWidgets.${subject}.choose`)}
+          </FileWidgetButton>
+          <FileWidgetButton onClick={this.handleUrl(subject)}>
+            {t(`editor.editorWidgets.${subject}.chooseUrl`)}
+          </FileWidgetButton>
+        </>
+      );
+    };
 
     render() {
       const { value, classNameWrapper } = this.props;
       const subject = forImage ? 'image' : 'file';
-      const article = forImage ? 'an' : 'a';
 
       return (
         <div className={classNameWrapper}>
-          <span>
-            {value ? this.renderSelection(subject) : this.renderNoSelection(subject, article)}
-          </span>
+          <span>{value ? this.renderSelection(subject) : this.renderNoSelection(subject)}</span>
         </div>
       );
     }

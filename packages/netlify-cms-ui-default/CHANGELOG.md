@@ -3,6 +3,174 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.12.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.11.6...netlify-cms-ui-default@2.12.0) (2020-11-26)
+
+
+### Features
+
+* add azure devops backend ([#4427](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/4427)) ([4e6dc88](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/4e6dc88efb1dae4cf6137730c3b4fb6d0f75a8cc))
+
+
+
+
+
+## [2.11.6](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.11.5...netlify-cms-ui-default@2.11.6) (2020-09-20)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+## [2.11.5](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.11.4...netlify-cms-ui-default@2.11.5) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+## 2.11.4 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.11.3 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.11.2 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+## [2.11.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.11.0...netlify-cms-ui-default@2.11.1) (2020-06-18)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+# [2.11.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.10.1...netlify-cms-ui-default@2.11.0) (2020-06-01)
+
+
+### Features
+
+* add filter to collection view ([#3741](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3741)) ([c28cc0c](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/c28cc0c9e7c7bc4bed07c02dfb869b2dedab9aab))
+
+
+
+
+
+## [2.10.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.10.0...netlify-cms-ui-default@2.10.1) (2020-05-04)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+# [2.10.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.5...netlify-cms-ui-default@2.10.0) (2020-04-14)
+
+
+### Bug Fixes
+
+* increase DropdownList z-index ([#3579](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3579)) ([7fcdaef](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/7fcdaef1c92c65d981ac2ebc1077d8da0c3ca285))
+
+
+### Features
+
+* **widget-datetime:** add now to datepicker ([#3484](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3484)) ([79b8469](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/79b8469337dade3bd7472b3f42b826efc7e0987d))
+
+
+
+
+
+## [2.9.5](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.4...netlify-cms-ui-default@2.9.5) (2020-04-01)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+## [2.9.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.3...netlify-cms-ui-default@2.9.4) (2020-03-30)
+
+**Note:** Version bump only for package netlify-cms-ui-default
+
+
+
+
+
+## [2.9.3](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.2...netlify-cms-ui-default@2.9.3) (2020-03-12)
+
+
+### Bug Fixes
+
+* ja locale labels ([#3367](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3367)) ([50837b0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/50837b0068ac8972ce16cbf5f238aa5a2c5bd6e9))
+
+
+
+
+
+## [2.9.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.1...netlify-cms-ui-default@2.9.2) (2020-03-03)
+
+
+### Bug Fixes
+
+* **locale:** Remove hard coded string literals ([#3333](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3333)) ([7c45a3c](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/7c45a3cda983be427864a56e58791565eb9232e2))
+
+
+
+
+
+## [2.9.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.9.0...netlify-cms-ui-default@2.9.1) (2020-02-13)
+
+
+### Bug Fixes
+
+* change getAsset to not return a promise ([#3232](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3232)) ([ab685e8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/ab685e85943d1ac48142f157683bc2126fd6af16))
+
+
+
+
+
+# [2.9.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.8.0...netlify-cms-ui-default@2.9.0) (2020-02-10)
+
+
+### Features
+
+* field based media/public folders ([#3208](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/issues/3208)) ([97bc0c8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/97bc0c8dc489e736f89d748ba832d78400fe4332))
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([a015d1d](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/commit/a015d1d92a4b1c0130c44fcef1c9ecdb157a0f07))
+
+
+
+
+
 # [2.8.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-ui-default/compare/netlify-cms-ui-default@2.8.0-beta.0...netlify-cms-ui-default@2.8.0) (2020-01-07)
 
 

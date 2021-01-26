@@ -4,16 +4,17 @@ const nodeExternals = require('webpack-node-externals');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const { NODE_ENV = 'production' } = process.env;
 
-const allowList = [/^netlify-cms-lib-util/];
+const allowlist = [/^netlify-cms-lib-util/];
 
 module.exports = {
-  entry: path.join('src', 'index.ts'),
+  entry: { index: path.join('src', 'index.ts'), middlewares: path.join('src', 'middlewares.ts') },
   mode: NODE_ENV,
   target: 'node',
   devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
+    filename: '[name].js',
+    libraryTarget: 'commonjs2',
   },
   resolve: {
     plugins: [new TsconfigPathsPlugin()],
@@ -28,9 +29,9 @@ module.exports = {
     ],
   },
   externals: [
-    nodeExternals({ whitelist: allowList }),
+    nodeExternals({ allowlist }),
     nodeExternals({
-      whitelist: allowList,
+      allowlist,
       modulesDir: path.resolve(__dirname, path.join('..', '..', 'node_modules')),
     }),
   ],

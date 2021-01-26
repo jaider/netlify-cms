@@ -3,6 +3,137 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.8.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.7.4...netlify-cms-widget-file@2.8.0) (2021-01-14)
+
+
+### Features
+
+* **widget-file:** allow adding file from url ([#4700](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/4700)) ([9e277ad](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/9e277ad851ea598405e02a7c11624f337da18260))
+
+
+
+
+
+## [2.7.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.7.3...netlify-cms-widget-file@2.7.4) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-widget-file
+
+
+
+
+
+## 2.7.3 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.7.2 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.7.1 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+# [2.7.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.6.4...netlify-cms-widget-file@2.7.0) (2020-06-18)
+
+
+### Features
+
+* add widgets schema validation ([#3841](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3841)) ([2b46608](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/2b46608f86d22c8ad34f75e396be7c34462d9e99))
+
+
+
+
+
+## [2.6.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.6.3...netlify-cms-widget-file@2.6.4) (2020-04-06)
+
+
+### Bug Fixes
+
+* **widget-image:** multiple image support ([#3538](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3538)) ([76732f7](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/76732f7208d8f46bbb6fd009729639ded30fae6e))
+
+
+
+
+
+## [2.6.3](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.6.2...netlify-cms-widget-file@2.6.3) (2020-03-30)
+
+
+### Bug Fixes
+
+* allow widgets to control value to be validated ([#3448](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3448)) ([ae1917c](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/ae1917c8181892a439d0828d98992788fb48d65c))
+
+
+
+
+
+## [2.6.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.6.1...netlify-cms-widget-file@2.6.2) (2020-02-14)
+
+**Note:** Version bump only for package netlify-cms-widget-file
+
+
+
+
+
+## [2.6.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.6.0...netlify-cms-widget-file@2.6.1) (2020-02-13)
+
+
+### Bug Fixes
+
+* change getAsset to not return a promise ([#3232](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3232)) ([ab685e8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/ab685e85943d1ac48142f157683bc2126fd6af16))
+
+
+
+
+
+# [2.6.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.5.3...netlify-cms-widget-file@2.6.0) (2020-02-10)
+
+
+### Features
+
+* field based media/public folders ([#3208](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3208)) ([97bc0c8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/97bc0c8dc489e736f89d748ba832d78400fe4332))
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([a015d1d](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/a015d1d92a4b1c0130c44fcef1c9ecdb157a0f07))
+
+
+
+
+
+## [2.5.3](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.5.2...netlify-cms-widget-file@2.5.3) (2020-02-06)
+
+
+### Bug Fixes
+
+* **locale:** remove hard coded strings ([#3193](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/issues/3193)) ([fc91bf8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/commit/fc91bf8781e65ce1dc946363dbb10419a145c66b))
+
+
+
+
+
 ## [2.5.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-file/compare/netlify-cms-widget-file@2.5.1...netlify-cms-widget-file@2.5.2) (2020-01-26)
 
 

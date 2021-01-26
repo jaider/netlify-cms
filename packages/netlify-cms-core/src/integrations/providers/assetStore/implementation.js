@@ -1,5 +1,8 @@
 import { pickBy, trimEnd } from 'lodash';
 import { addParams } from 'Lib/urlHelper';
+import { unsentRequest } from 'netlify-cms-lib-util';
+
+const { fetchWithTimeout: fetch } = unsentRequest;
 
 export default class AssetStore {
   constructor(config, getToken) {
@@ -78,7 +81,7 @@ export default class AssetStore {
     };
     const response = await this.request(url, { headers });
     const files = response.map(({ id, name, size, url }) => {
-      return { id, name, size, displayURL: url, url };
+      return { id, name, size, displayURL: url, url, path: url };
     });
     return files;
   }
@@ -133,7 +136,7 @@ export default class AssetStore {
         await this.confirmRequest(id);
       }
 
-      const asset = { id, name, size, displayURL: url, url };
+      const asset = { id, name, size, displayURL: url, url, path: url };
       return { success: true, asset };
     } catch (error) {
       console.error(error);

@@ -1,15 +1,26 @@
 import { Map } from 'immutable';
 import { flow, partialRight, trimEnd, trimStart } from 'lodash';
 import { sanitizeSlug } from './urlHelper';
+import { stringTemplate } from 'netlify-cms-lib-widgets';
 import {
+  selectIdentifier,
+  selectField,
+  COMMIT_AUTHOR,
+  COMMIT_DATE,
+  selectInferedField,
+  getFileFromSlug,
+} from '../reducers/collections';
+import { Collection, SlugConfig, Config, EntryMap } from '../types/redux';
+import { stripIndent } from 'common-tags';
+import { FILES } from '../constants/collectionTypes';
+
+const {
   compileStringTemplate,
   parseDateFromEntry,
   SLUG_MISSING_REQUIRED_DATE,
-} from './stringTemplate';
-import { selectIdentifier } from '../reducers/collections';
-import { Collection, SlugConfig, Config, EntryMap } from '../types/redux';
-import { stripIndent } from 'common-tags';
-import { basename, fileExtension } from 'netlify-cms-lib-util';
+  keyToPathArray,
+  addFileTemplateFields,
+} = stringTemplate;
 
 const commitMessageTemplates = Map({
   create: 'Create {{collection}} “{{slug}}”',
@@ -48,6 +59,10 @@ export const commitMessageFormatter = (
         return path || '';
       case 'collection':
         return collection ? collection.get('label_singular') || collection.get('label') : '';
+      case 'author-login':
+        return authorLogin || '';
+      case 'author-name':
+        return authorName || '';
       default:
         console.warn(`Ignoring unknown variable “${variable}” in commit message template.`);
         return '';
@@ -90,8 +105,12 @@ export const prepareSlug = (slug: string) => {
   );
 };
 
-const getProcessSegment = (slugConfig: SlugConfig) =>
-  flow([value => String(value), prepareSlug, partialRight(sanitizeSlug, slugConfig)]);
+export const getProcessSegment = (slugConfig: SlugConfig, ignoreValues: string[] = []) => {
+  return (value: string) =>
+    ignoreValues.includes(value)
+      ? value
+      : flow([value => String(value), prepareSlug, partialRight(sanitizeSlug, slugConfig)])(value);
+};
 
 export const slugFormatter = (
   collection: Collection,
@@ -100,9 +119,7 @@ export const slugFormatter = (
 ) => {
   const slugTemplate = collection.get('slug') || '{{slug}}';
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-  // @ts-ignore
-  const identifier = entryData.get(selectIdentifier(collection)) as string;
+  const identifier = entryData.getIn(keyToPathArray(selectIdentifier(collection) as string));
   if (!identifier) {
     throw new Error(
       'Collection must have a field name that is a valid entry identifier, or must have `identifier_field` set',
@@ -116,26 +133,11 @@ export const slugFormatter = (
   if (!collection.has('path')) {
     return slug;
   } else {
-    const pathTemplate = collection.get('path') as string;
+    const pathTemplate = prepareSlug(collection.get('path') as string);
     return compileStringTemplate(pathTemplate, date, slug, entryData, (value: string) =>
       value === slug ? value : processSegment(value),
     );
   }
-};
-
-const addFileTemplateFields = (entryPath: string, fields: Map<string, string>) => {
-  if (!entryPath) {
-    return fields;
-  }
-
-  const extension = fileExtension(entryPath);
-  const filename = basename(entryPath, `.${extension}`);
-  fields = fields.withMutations(map => {
-    map.set('filename', filename);
-    map.set('extension', extension);
-  });
-
-  return fields;
 };
 
 export const previewUrlFormatter = (
@@ -153,27 +155,40 @@ export const previewUrlFormatter = (
     return;
   }
 
+  const basePath = trimEnd(baseUrl, '/');
+
+  const isFileCollection = collection.get('type') === FILES;
+  const file = isFileCollection ? getFileFromSlug(collection, entry.get('slug')) : undefined;
+
+  const getPathTemplate = () => {
+    return file?.get('preview_path') ?? collection.get('preview_path');
+  };
+  const getDateField = () => {
+    return file?.get('preview_path_date_field') ?? collection.get('preview_path_date_field');
+  };
+
   /**
-   * Without a `previewPath` for the collection (via config), the preview URL
+   * If a `previewPath` is provided for the collection/file, use it to construct the
+   * URL path.
+   */
+  const pathTemplate = getPathTemplate();
+
+  /**
+   * Without a `previewPath` for the collection/file (via config), the preview URL
    * will be the URL provided by the backend.
    */
-  if (!collection.get('preview_path')) {
+  if (!pathTemplate) {
     return baseUrl;
   }
 
-  /**
-   * If a `previewPath` is provided for the collection, use it to construct the
-   * URL path.
-   */
-  const basePath = trimEnd(baseUrl, '/');
-  const pathTemplate = collection.get('preview_path') as string;
   let fields = entry.get('data') as Map<string, string>;
-  fields = addFileTemplateFields(entry.get('path'), fields);
-  const date = parseDateFromEntry(entry, collection, collection.get('preview_path_date_field'));
+  fields = addFileTemplateFields(entry.get('path'), fields, collection.get('folder'));
+  const dateFieldName = getDateField() || selectInferedField(collection, 'date');
+  const date = parseDateFromEntry((entry as unknown) as Map<string, unknown>, dateFieldName);
 
   // Prepare and sanitize slug variables only, leave the rest of the
   // `preview_path` template as is.
-  const processSegment = getProcessSegment(slugConfig);
+  const processSegment = getProcessSegment(slugConfig, [fields.get('dirname')]);
   let compiledPath;
 
   try {
@@ -201,9 +216,22 @@ export const summaryFormatter = (
   entry: EntryMap,
   collection: Collection,
 ) => {
-  const entryData = entry.get('data');
-  const date = parseDateFromEntry(entry, collection) || null;
-  const identifier = entryData.get(selectIdentifier(collection));
+  let entryData = entry.get('data');
+  const date =
+    parseDateFromEntry(
+      (entry as unknown) as Map<string, unknown>,
+      selectInferedField(collection, 'date'),
+    ) || null;
+  const identifier = entryData.getIn(keyToPathArray(selectIdentifier(collection) as string));
+
+  entryData = addFileTemplateFields(entry.get('path'), entryData, collection.get('folder'));
+  // allow commit information in summary template
+  if (entry.get('author') && !selectField(collection, COMMIT_AUTHOR)) {
+    entryData = entryData.set(COMMIT_AUTHOR, entry.get('author'));
+  }
+  if (entry.get('updatedOn') && !selectField(collection, COMMIT_DATE)) {
+    entryData = entryData.set(COMMIT_DATE, entry.get('updatedOn'));
+  }
   const summary = compileStringTemplate(summaryTemplate, date, identifier, entryData);
   return summary;
 };
@@ -219,19 +247,25 @@ export const folderFormatter = (
   if (!entry || !entry.get('data')) {
     return folderTemplate;
   }
-  let fields = (entry.get('data') as Map<string, string>).set(folderKey, defaultFolder);
-  fields = addFileTemplateFields(entry.get('path'), fields);
 
-  const date = parseDateFromEntry(entry, collection) || null;
-  const identifier = fields.get(selectIdentifier(collection) as string);
-  const processSegment = getProcessSegment(slugConfig);
+  let fields = (entry.get('data') as Map<string, string>).set(folderKey, defaultFolder);
+  fields = addFileTemplateFields(entry.get('path'), fields, collection.get('folder'));
+
+  const date =
+    parseDateFromEntry(
+      (entry as unknown) as Map<string, unknown>,
+      selectInferedField(collection, 'date'),
+    ) || null;
+  const identifier = fields.getIn(keyToPathArray(selectIdentifier(collection) as string));
+  const processSegment = getProcessSegment(slugConfig, [defaultFolder, fields.get('dirname')]);
 
   const mediaFolder = compileStringTemplate(
     folderTemplate,
     date,
     identifier,
     fields,
-    (value: string) => (value === defaultFolder ? defaultFolder : processSegment(value)),
+    processSegment,
   );
+
   return mediaFolder;
 };

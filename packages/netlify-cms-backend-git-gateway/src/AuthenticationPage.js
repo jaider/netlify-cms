@@ -9,6 +9,7 @@ import {
   colors,
   colorsRaw,
   lengths,
+  zIndex,
 } from 'netlify-cms-ui-default';
 
 const LoginButton = styled.button`
@@ -38,7 +39,7 @@ const AuthInput = styled.input`
   margin-top: 6px;
   width: 100%;
   position: relative;
-  z-index: 1;
+  z-index: ${zIndex.zIndex1};
 
   &:focus {
     outline: none;
@@ -124,7 +125,7 @@ export default class GitGatewayAuthenticationPage extends React.Component {
     this.setState({ ...this.state, [name]: e.target.value });
   };
 
-  handleLogin = e => {
+  handleLogin = async e => {
     e.preventDefault();
 
     const { email, password } = this.state;
@@ -142,17 +143,16 @@ export default class GitGatewayAuthenticationPage extends React.Component {
       return;
     }
 
-    GitGatewayAuthenticationPage.authClient
-      .login(this.state.email, this.state.password, true)
-      .then(user => {
-        this.props.onLogin(user);
-      })
-      .catch(error => {
-        this.setState({
-          errors: { server: error.description || error.msg || error },
-          loggingIn: false,
-        });
+    try {
+      const client = await GitGatewayAuthenticationPage.authClient();
+      const user = await client.login(this.state.email, this.state.password, true);
+      this.props.onLogin(user);
+    } catch (error) {
+      this.setState({
+        errors: { server: error.description || error.msg || error },
+        loggingIn: false,
       });
+    }
   };
 
   render() {
@@ -164,6 +164,7 @@ export default class GitGatewayAuthenticationPage extends React.Component {
         return (
           <AuthenticationPage
             logoUrl={config.logo_url}
+            siteUrl={config.site_url}
             onLogin={this.handleIdentity}
             renderPageContent={() => (
               <a
@@ -174,14 +175,17 @@ export default class GitGatewayAuthenticationPage extends React.Component {
                 {errors.identity}
               </a>
             )}
+            t={t}
           />
         );
       } else {
         return (
           <AuthenticationPage
             logoUrl={config.logo_url}
+            siteUrl={config.site_url}
             onLogin={this.handleIdentity}
             renderButtonContent={() => t('auth.loginWithNetlifyIdentity')}
+            t={t}
           />
         );
       }
@@ -194,7 +198,7 @@ export default class GitGatewayAuthenticationPage extends React.Component {
         renderPageContent={() => (
           <AuthForm onSubmit={this.handleLogin}>
             {!error ? null : <ErrorMessage>{error}</ErrorMessage>}
-            {!errors.server ? null : <ErrorMessage>{errors.server}</ErrorMessage>}
+            {!errors.server ? null : <ErrorMessage>{String(errors.server)}</ErrorMessage>}
             <ErrorMessage>{errors.email || null}</ErrorMessage>
             <AuthInput
               type="text"
@@ -216,6 +220,7 @@ export default class GitGatewayAuthenticationPage extends React.Component {
             </LoginButton>
           </AuthForm>
         )}
+        t={t}
       />
     );
   }

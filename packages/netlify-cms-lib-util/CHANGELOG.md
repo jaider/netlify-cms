@@ -3,6 +3,194 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.12.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.12.0...netlify-cms-lib-util@2.12.1) (2020-12-13)
+
+
+### Bug Fixes
+
+* **lib-util:** update js-sha256 import ([#4699](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/4699)) ([60f7e0b](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/60f7e0bba67c6555acba3e04039c49f10cf51f6b))
+
+
+
+
+
+# [2.12.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.11.5...netlify-cms-lib-util@2.12.0) (2020-11-26)
+
+
+### Features
+
+* add azure devops backend ([#4427](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/4427)) ([4e6dc88](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/4e6dc88efb1dae4cf6137730c3b4fb6d0f75a8cc))
+
+
+
+
+
+## [2.11.5](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.11.4...netlify-cms-lib-util@2.11.5) (2020-09-20)
+
+**Note:** Version bump only for package netlify-cms-lib-util
+
+
+
+
+
+## [2.11.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.11.3...netlify-cms-lib-util@2.11.4) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-lib-util
+
+
+
+
+
+## 2.11.3 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.11.2 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.11.1 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+# [2.11.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.10.0...netlify-cms-lib-util@2.11.0) (2020-06-18)
+
+
+### Bug Fixes
+
+* handle token expiry ([#3847](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3847)) ([285c940](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/285c940562548d7bc88de244123ba87ff66fba65))
+
+
+### Features
+
+* add backend status down indicator ([#3889](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3889)) ([a50edc7](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/a50edc70553ad6afa1acee6a51996ad226443f8c))
+
+
+
+
+
+# [2.10.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.9.4...netlify-cms-lib-util@2.10.0) (2020-06-01)
+
+
+### Features
+
+* add pre save/ post save hooks ([#3812](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3812)) ([812716e](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/812716e18b09a716547f128b783c8e6f3d54cc5b))
+
+
+
+
+
+## [2.9.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.9.3...netlify-cms-lib-util@2.9.4) (2020-05-19)
+
+
+### Bug Fixes
+
+* clear fetch timeout on successful response ([#3768](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3768)) ([088b1a8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/088b1a8ab626498382d6305fa46d174d4f5ba755))
+
+
+
+
+
+## [2.9.3](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.9.2...netlify-cms-lib-util@2.9.3) (2020-04-21)
+
+**Note:** Version bump only for package netlify-cms-lib-util
+
+
+
+
+
+## [2.9.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.9.1...netlify-cms-lib-util@2.9.2) (2020-04-01)
+
+
+### Bug Fixes
+
+* move common api functions to a separate file ([#3511](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3511)) ([49098de](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/49098de27f053e51aa3d936d09adae3a7186c6ae))
+
+
+
+
+
+## [2.9.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.9.0...netlify-cms-lib-util@2.9.1) (2020-04-01)
+
+**Note:** Version bump only for package netlify-cms-lib-util
+
+
+
+
+
+# [2.9.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.8.0...netlify-cms-lib-util@2.9.0) (2020-03-12)
+
+
+### Features
+
+* add media lib virtualization ([#3381](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3381)) ([92e7601](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/92e76011e7a9e8b5370088b0a2c065df66b5f7fb))
+* **backend-github:** add pagination ([#3379](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3379)) ([39f1307](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/39f1307e3a36447da8c9b3ca79b1d7db52ea1a19))
+
+
+
+
+
+# [2.8.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.7.1...netlify-cms-lib-util@2.8.0) (2020-02-25)
+
+
+### Features
+
+* **core:** align GitHub metadata handling with other backends ([#3316](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3316)) ([7e0a8ad](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/7e0a8ad532012576dc5e40bd4e9d54522e307123)), closes [#3292](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3292)
+
+
+
+
+
+## [2.7.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.7.0...netlify-cms-lib-util@2.7.1) (2020-02-14)
+
+**Note:** Version bump only for package netlify-cms-lib-util
+
+
+
+
+
+# [2.7.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.6.2...netlify-cms-lib-util@2.7.0) (2020-02-10)
+
+
+### Bug Fixes
+
+* filter paginated results ([#3216](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3216)) ([0a482b1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/0a482b10049bcfa022b81165cabf4512d77e0b88))
+
+
+### Features
+
+* field based media/public folders ([#3208](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/issues/3208)) ([97bc0c8](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/97bc0c8dc489e736f89d748ba832d78400fe4332))
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([a015d1d](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/commit/a015d1d92a4b1c0130c44fcef1c9ecdb157a0f07))
+
+
+
+
+
 ## [2.6.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-lib-util/compare/netlify-cms-lib-util@2.6.1...netlify-cms-lib-util@2.6.2) (2020-01-24)
 
 

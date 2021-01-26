@@ -17,19 +17,21 @@ export default class BitbucketAuthenticationPage extends React.Component {
     authEndpoint: PropTypes.string,
     config: PropTypes.object.isRequired,
     clearHash: PropTypes.func,
+    t: PropTypes.func.isRequired,
   };
 
   state = {};
 
   componentDidMount() {
-    const {
-      auth_type: authType = '',
-      base_url = 'https://bitbucket.org',
-      auth_endpoint = 'site/oauth2/authorize',
-      app_id = '',
-    } = this.props.config.backend;
+    const { auth_type: authType = '' } = this.props.config.backend;
 
     if (authType === 'implicit') {
+      const {
+        base_url = 'https://bitbucket.org',
+        auth_endpoint = 'site/oauth2/authorize',
+        app_id = '',
+      } = this.props.config.backend;
+
       this.auth = new ImplicitAuthenticator({
         base_url,
         auth_endpoint,
@@ -70,7 +72,7 @@ export default class BitbucketAuthenticationPage extends React.Component {
   };
 
   render() {
-    const { inProgress, config } = this.props;
+    const { inProgress, config, t } = this.props;
 
     return (
       <AuthenticationPage
@@ -82,9 +84,10 @@ export default class BitbucketAuthenticationPage extends React.Component {
         renderButtonContent={() => (
           <React.Fragment>
             <LoginButtonIcon type="bitbucket" />
-            {inProgress ? 'Logging in...' : 'Login with Bitbucket'}
+            {inProgress ? t('auth.loggingIn') : t('auth.loginWithBitbucket')}
           </React.Fragment>
         )}
+        t={t}
       />
     );
   }

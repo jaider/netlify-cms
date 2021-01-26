@@ -3,6 +3,121 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.6.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.5.6...netlify-cms-widget-object@2.6.0) (2020-10-20)
+
+
+### Features
+
+* **widget-object:** add "summary" [#4291](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/4291) ([#4398](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/4398)) ([963e775](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/963e775897cd1e9357e0af79812b430fa6fd2cdb))
+
+
+
+
+
+## [2.5.6](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.5.5...netlify-cms-widget-object@2.5.6) (2020-09-20)
+
+**Note:** Version bump only for package netlify-cms-widget-object
+
+
+
+
+
+## [2.5.5](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.5.4...netlify-cms-widget-object@2.5.5) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-widget-object
+
+
+
+
+
+## 2.5.4 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.5.3 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.5.2 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+## [2.5.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.5.0...netlify-cms-widget-object@2.5.1) (2020-07-16)
+
+
+### Bug Fixes
+
+* **prop-types:** check for react components via PropTypes.elementType ([#4025](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/4025)) ([d3831b1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/d3831b1ed44fcff51a63f6645a5aa68332467dab))
+
+
+
+
+
+# [2.5.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.4.2...netlify-cms-widget-object@2.5.0) (2020-06-18)
+
+
+### Features
+
+* add widgets schema validation ([#3841](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/3841)) ([2b46608](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/2b46608f86d22c8ad34f75e396be7c34462d9e99))
+
+
+
+
+
+## [2.4.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.4.1...netlify-cms-widget-object@2.4.2) (2020-06-01)
+
+
+### Bug Fixes
+
+* Error UI improvements for nested lists/objects ([#3726](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/3726)) ([3978578](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/397857855b2c8514c2f7ce83756af6b6698abc3d))
+
+
+
+
+
+## [2.4.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.4.0...netlify-cms-widget-object@2.4.1) (2020-04-20)
+
+
+### Bug Fixes
+
+* list widget item collapse toggle ([#3623](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/3623)) ([3a666e2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/3a666e26b507f16767d0dafb82cd8a030424eec3))
+
+
+
+
+
+# [2.4.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.3.1...netlify-cms-widget-object@2.4.0) (2020-04-16)
+
+
+### Features
+
+* **widget-object:** add collapsed option to collapse object by default ([#3606](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/issues/3606)) ([9f17363](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/commit/9f17363beee718ac6102cecfa965d631e4675090))
+
+
+
+
+
 ## [2.3.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-object/compare/netlify-cms-widget-object@2.3.0...netlify-cms-widget-object@2.3.1) (2020-01-07)
 
 

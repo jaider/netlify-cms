@@ -38,7 +38,17 @@ const jsToMap = (obj: {}) => {
   return immutableObj;
 };
 
-const knownMetaKeys = Set(['index', 'count', 'pageSize', 'pageCount', 'usingOldPaginationAPI']);
+const knownMetaKeys = Set([
+  'index',
+  'page',
+  'count',
+  'pageSize',
+  'pageCount',
+  'usingOldPaginationAPI',
+  'extension',
+  'folder',
+  'depth',
+]);
 const filterUnknownMetaKeys = (meta: Map<string, string>) =>
   meta.filter((_v, k) => knownMetaKeys.has(k as string));
 
@@ -76,8 +86,10 @@ const getActionHandlers = (store: CursorStore, handler: ActionHandler) =>
 export default class Cursor {
   store?: CursorStore;
   actions?: Set<string>;
-  data?: Map<string, unknown>;
-  meta?: Map<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: Map<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  meta?: Map<string, any>;
 
   static create(...args: {}[]) {
     return new Cursor(...args);

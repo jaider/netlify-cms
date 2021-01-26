@@ -1,46 +1,55 @@
-import yaml from 'js-yaml';
-import moment from 'moment';
-import AssetProxy from 'ValueObjects/AssetProxy';
+import yaml from 'yaml';
 import { sortKeys } from './helpers';
 
-const MomentType = new yaml.Type('date', {
-  kind: 'scalar',
-  predicate(value) {
-    return moment.isMoment(value);
-  },
-  represent(value) {
-    return value.format(value._f);
-  },
-  resolve(value) {
-    return moment.isMoment(value) && value._f;
-  },
-});
+const addComments = (items, comments, prefix = '') => {
+  items.forEach(item => {
+    if (item.key !== undefined) {
+      const itemKey = item.key.toString();
+      const key = prefix ? `${prefix}.${itemKey}` : itemKey;
+      if (comments[key]) {
+        const value = comments[key].split('\\n').join('\n ');
+        item.commentBefore = ` ${value}`;
+      }
+      if (Array.isArray(item.value?.items)) {
+        addComments(item.value.items, comments, key);
+      }
+    }
+  });
+};
 
-const ImageType = new yaml.Type('image', {
-  kind: 'scalar',
-  instanceOf: AssetProxy,
-  represent(value) {
-    return `${value.path}`;
-  },
-  resolve(value) {
-    if (value === null) return false;
-    if (value instanceof AssetProxy) return true;
-    return false;
-  },
-});
-
-const OutputSchema = new yaml.Schema({
-  include: yaml.DEFAULT_SAFE_SCHEMA.include,
-  implicit: [MomentType, ImageType].concat(yaml.DEFAULT_SAFE_SCHEMA.implicit),
-  explicit: yaml.DEFAULT_SAFE_SCHEMA.explicit,
-});
+const timestampTag = {
+  identify: value => value instanceof Date,
+  default: true,
+  tag: '!timestamp',
+  test: RegExp(
+    '^' +
+    '([0-9]{4})-([0-9]{2})-([0-9]{2})' + // YYYY-MM-DD
+    'T' + // T
+    '([0-9]{2}):([0-9]{2}):([0-9]{2}(\\.[0-9]+)?)' + // HH:MM:SS(.ss)?
+    'Z' + // Z
+      '$',
+  ),
+  resolve: str => new Date(str),
+  stringify: value => value.toISOString(),
+};
 
 export default {
   fromFile(content) {
-    return yaml.safeLoad(content);
+    if (content && content.trim().endsWith('---')) {
+      content = content.trim().slice(0, -3);
+    }
+    return yaml.parse(content, { customTags: [timestampTag] });
   },
 
-  toFile(data, sortedKeys = []) {
-    return yaml.safeDump(data, { schema: OutputSchema, sortKeys: sortKeys(sortedKeys) });
+  toFile(data, sortedKeys = [], comments = {}) {
+    const contents = yaml.createNode(data);
+
+    addComments(contents.items, comments);
+
+    contents.items.sort(sortKeys(sortedKeys, item => item.key?.toString()));
+    const doc = new yaml.Document();
+    doc.contents = contents;
+
+    return doc.toString();
   },
 };

@@ -3,6 +3,10 @@ const en = {
     login: 'Login',
     loggingIn: 'Logging in...',
     loginWithNetlifyIdentity: 'Login with Netlify Identity',
+    loginWithAzure: 'Login with Azure',
+    loginWithBitbucket: 'Login with Bitbucket',
+    loginWithGitHub: 'Login with GitHub',
+    loginWithGitLab: 'Login with GitLab',
     errors: {
       email: 'Make sure to enter your email.',
       password: 'Please enter your password.',
@@ -31,19 +35,46 @@ const en = {
   collection: {
     sidebar: {
       collections: 'Collections',
+      allCollections: 'All Collections',
       searchAll: 'Search all',
+      searchIn: 'Search in',
     },
     collectionTop: {
+      sortBy: 'Sort by',
       viewAs: 'View as',
       newButton: 'New %{collectionLabel}',
+      ascending: 'Ascending',
+      descending: 'Descending',
+      searchResults: 'Search Results for "%{searchTerm}"',
+      searchResultsInCollection: 'Search Results for "%{searchTerm}" in %{collection}',
+      filterBy: 'Filter by',
+      groupBy: 'Group by',
     },
     entries: {
-      loadingEntries: 'Loading Entries',
-      cachingEntries: 'Caching Entries',
+      loadingEntries: 'Loading Entries...',
+      cachingEntries: 'Caching Entries...',
       longerLoading: 'This might take several minutes',
+      noEntries: 'No Entries',
+    },
+    groups: {
+      other: 'Other',
+      negateLabel: 'Not %{label}',
+    },
+    defaultFields: {
+      author: {
+        label: 'Author',
+      },
+      updatedOn: {
+        label: 'Updated On',
+      },
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'optional',
+      },
+    },
     editorControlPane: {
       widget: {
         required: '%{fieldLabel} is required.',
@@ -56,6 +87,11 @@ const en = {
         rangeCountExact: '%{fieldLabel} must have exactly %{count} item(s).',
         minCount: '%{fieldLabel} must be at least %{minCount} item(s).',
         maxCount: '%{fieldLabel} must be %{maxCount} or less item(s).',
+        invalidPath: `'%{path}' is not a valid path`,
+        pathExists: `Path '%{path}' already exists`,
+      },
+      i18n: {
+        writingInLocale: 'Writing in %{locale}',
       },
     },
     editor: {
@@ -105,11 +141,52 @@ const en = {
       deployButtonLabel: 'View Live',
     },
     editorWidgets: {
+      markdown: {
+        bold: 'Bold',
+        italic: 'Italic',
+        code: 'Code',
+        link: 'Link',
+        linkPrompt: 'Enter the URL of the link',
+        headings: 'Headings',
+        quote: 'Quote',
+        bulletedList: 'Bulleted List',
+        numberedList: 'Numbered List',
+        addComponent: 'Add Component',
+        richText: 'Rich Text',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Choose an image',
+        chooseUrl: 'Insert from URL',
+        replaceUrl: 'Replace with URL',
+        promptUrl: 'Enter the URL of the image',
+        chooseDifferent: 'Choose different image',
+        remove: 'Remove image',
+      },
+      file: {
+        choose: 'Choose a file',
+        chooseUrl: 'Insert from URL',
+        replaceUrl: 'Replace with URL',
+        promptUrl: 'Enter the URL of the file',
+        chooseDifferent: 'Choose different file',
+        remove: 'Remove file',
+      },
       unknownControl: {
         noControl: "No control for widget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "No preview for widget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
+      },
+      datetime: {
+        now: 'Now',
       },
     },
   },
@@ -131,18 +208,24 @@ const en = {
       mediaAssets: 'Media assets',
       search: 'Search...',
       uploading: 'Uploading...',
-      uploadNew: 'Upload new',
+      upload: 'Upload',
+      download: 'Download',
       deleting: 'Deleting...',
       deleteSelected: 'Delete selected',
       chooseSelected: 'Choose selected',
     },
   },
   ui: {
+    default: {
+      goBackToSite: 'Go back to site',
+    },
     errorBoundary: {
       title: 'Error',
       details: "There's been an error - please ",
-      reportIt: 'report it.',
+      reportIt: 'open an issue on GitHub.',
       detailsHeading: 'Details',
+      privacyWarning:
+        'Opening an issue pre-populates it with the error message and debugging data.\nPlease verify the information is correct and remove sensitive data if exists.',
       recoveredEntry: {
         heading: 'Recovered document',
         warning: 'Please copy/paste this somewhere before navigating away!',
@@ -167,6 +250,9 @@ const en = {
       entryUpdated: 'Entry status updated',
       onDeleteUnpublishedChanges: 'Unpublished changes deleted',
       onFailToAuth: '%{details}',
+      onLoggedOut: 'You have been logged out, please back up any data and login again',
+      onBackendDown:
+        'The backend service is experiencing an outage. See %{details} for more information',
     },
   },
   workflow: {
@@ -176,6 +262,7 @@ const en = {
       newPost: 'New Post',
       description:
         '%{smart_count} entry waiting for review, %{readyCount} ready to go live. |||| %{smart_count} entries waiting for review, %{readyCount} ready to go live. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} by %{author}',

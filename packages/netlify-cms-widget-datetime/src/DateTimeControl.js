@@ -5,6 +5,35 @@ import { jsx, css } from '@emotion/core';
 import reactDateTimeStyles from 'react-datetime/css/react-datetime.css';
 import DateTime from 'react-datetime';
 import moment from 'moment';
+import { buttons } from 'netlify-cms-ui-default';
+
+const NowButton = ({ t, handleChange }) => {
+  return (
+    <div
+      css={css`
+        position: absolute;
+        right: 20px;
+        transform: translateY(-40px);
+        width: fit-content;
+        z-index: 1;
+      `}
+    >
+      <button
+        css={css`
+    ${buttons.button}
+    ${buttons.default}
+    ${buttons.lightBlue}
+    ${buttons.small}
+`}
+        onClick={() => {
+          handleChange(moment());
+        }}
+      >
+        {t('editor.editorWidgets.datetime.now')}
+      </button>
+    </div>
+  );
+};
 
 export default class DateTimeControl extends React.Component {
   static propTypes = {
@@ -23,9 +52,9 @@ export default class DateTimeControl extends React.Component {
 
     // dateFormat and timeFormat are strictly for modifying
     // input field with the date/time pickers
-    const dateFormat = field.get('dateFormat');
+    const dateFormat = field.get('date_format');
     // show time-picker? false hides it, true shows it using default format
-    let timeFormat = field.get('timeFormat');
+    let timeFormat = field.get('time_format');
     if (typeof timeFormat === 'undefined') {
       timeFormat = true;
     }
@@ -37,18 +66,32 @@ export default class DateTimeControl extends React.Component {
     };
   }
 
+  getDefaultValue() {
+    const { field } = this.props;
+    const defaultValue = field.get('default');
+    return defaultValue;
+  }
+
+  getPickerUtc() {
+    const { field } = this.props;
+    const pickerUtc = field.get('picker_utc');
+    return pickerUtc;
+  }
+
   formats = this.getFormats();
+  defaultValue = this.getDefaultValue();
+  pickerUtc = this.getPickerUtc();
 
   componentDidMount() {
     const { value } = this.props;
 
     /**
-     * Set the current date as default value if no default value is provided. An
-     * empty string means the value is intentionally blank.
+     * Set the current date as default value if no value is provided and default is absent. An
+     * empty default string means the value is intentionally blank.
      */
-    if (!value && value !== '') {
+    if (value === undefined) {
       setTimeout(() => {
-        this.handleChange(new Date());
+        this.handleChange(this.defaultValue === undefined ? new Date() : this.defaultValue);
       }, 0);
     }
   }
@@ -99,12 +142,14 @@ export default class DateTimeControl extends React.Component {
   };
 
   render() {
-    const { forID, value, classNameWrapper, setActiveStyle } = this.props;
+    const { forID, value, classNameWrapper, setActiveStyle, t, isDisabled } = this.props;
     const { format, dateFormat, timeFormat } = this.formats;
+
     return (
       <div
         css={css`
           ${reactDateTimeStyles};
+          position: relative;
         `}
       >
         <DateTime
@@ -115,7 +160,9 @@ export default class DateTimeControl extends React.Component {
           onFocus={setActiveStyle}
           onBlur={this.onBlur}
           inputProps={{ className: classNameWrapper, id: forID }}
+          utc={this.pickerUtc}
         />
+        {!isDisabled && <NowButton t={t} handleChange={v => this.handleChange(v)} />}
       </div>
     );
   }

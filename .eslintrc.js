@@ -25,13 +25,19 @@ module.exports = {
     'no-console': [0],
     'react/prop-types': [0],
     'no-duplicate-imports': 'error',
-    'emotion/no-vanilla': 'error',
-    'emotion/import-from-emotion': 'error',
-    'emotion/styled-import': 'error',
+    '@emotion/no-vanilla': 'error',
+    '@emotion/import-from-emotion': 'error',
+    '@emotion/styled-import': 'error',
     'require-atomic-updates': [0],
     'object-shorthand': ['error', 'always'],
+    'prefer-const': [
+      'error',
+      {
+        destructuring: 'all',
+      },
+    ],
   },
-  plugins: ['babel', 'emotion', 'cypress'],
+  plugins: ['babel', '@emotion', 'cypress'],
   settings: {
     react: {
       version: 'detect',

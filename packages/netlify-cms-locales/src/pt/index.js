@@ -1,17 +1,31 @@
 const pt = {
+  auth: {
+    login: 'Entrar',
+    loggingIn: 'Entrando...',
+    loginWithNetlifyIdentity: 'Entrar com o Netlify Identity',
+    loginWithBitbucket: 'Entrar com o Bitbucket',
+    loginWithGitHub: 'Entrar com o GitHub',
+    loginWithGitLab: 'Entrar com o GitLab',
+    errors: {
+      email: 'Certifique-se de inserir seu e-mail.',
+      password: 'Por favor, insira sua senha.',
+      identitySettings:
+        'Não foi possível acessar as configurações de identidade. Ao usar o back-end git-gateway, certifique-se de habilitar o serviço Identity e o Git Gateway.',
+    },
+  },
   app: {
     header: {
       content: 'Conteúdos',
       workflow: 'Fluxo de Trabalho',
-      media: 'Media',
+      media: 'Mídia',
       quickAdd: 'Adição rápida',
     },
     app: {
-      errorHeader: 'Erro ao carregar a confuguração do CMS',
+      errorHeader: 'Erro ao carregar a configuração do CMS',
       configErrors: 'Erros de configuração',
       checkConfigYml: 'Verifique o arquivo config.yml.',
       loadingConfig: 'Carregando configuração...',
-      waitingBackend: 'Aguardando o backend...',
+      waitingBackend: 'Aguardando o back-end...',
     },
     notFoundPage: {
       header: 'Não Encontrado',
@@ -20,31 +34,59 @@ const pt = {
   collection: {
     sidebar: {
       collections: 'Coleções',
+      allCollections: 'Todas as Coleções',
       searchAll: 'Pesquisar em todos',
+      searchIn: 'Pesquisar em',
     },
     collectionTop: {
+      sortBy: 'Ordenar por',
       viewAs: 'Visualizar como',
       newButton: 'Novo(a) %{collectionLabel}',
+      ascending: 'Ascendente',
+      descending: 'Descendente',
+      searchResults: 'Resultados da busca por "%{searchTerm}"',
+      searchResultsInCollection: 'Resultados da busca por "%{searchTerm}" em %{collection}',
+      filterBy: 'Filtrar por',
     },
     entries: {
       loadingEntries: 'Carregando Entradas',
       cachingEntries: 'Armazenando Entradas em Cache',
       longerLoading: 'Isso pode levar alguns minutos',
+      noEntries: 'Nenhuma Entrada',
+    },
+    defaultFields: {
+      author: {
+        label: 'Autor',
+      },
+      updatedOn: {
+        label: 'Atualizado em',
+      },
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'opcional',
+      },
+    },
     editorControlPane: {
       widget: {
-        required: '%{fieldLabel} é requerido(a).',
+        required: '%{fieldLabel} é obrigatório.',
         regexPattern: '%{fieldLabel} não corresponde com o padrão: %{pattern}.',
         processing: '%{fieldLabel} está processando.',
         range: '%{fieldLabel} deve estar entre %{minValue} e %{maxValue}.',
         min: '%{fieldLabel} deve ser, no mínimo, %{minValue}.',
-        max: '%{fieldLabel} deve ser igual ou menos que %{maxValue}.',
+        max: '%{fieldLabel} deve ser igual ou menor que %{maxValue}.',
+        rangeCount: '%{fieldLabel} deve ser entre %{minCount} e %{maxCount}.',
+        rangeCountExact: '%{fieldLabel} deve ser exatamente %{count}.',
+        minCount: '%{fieldLabel} deve ter, pelo menos, %{minCount}.',
+        maxCount: '%{fieldLabel} deve ter %{maxCount} ou menos.',
+        invalidPath: `'%{path}' não é um caminho válido`,
+        pathExists: `O caminho '%{path}' já existe`,
       },
     },
     editor: {
-      onLeavePage: 'Tem certeza que deseja sair dessa página?',
+      onLeavePage: 'Tem certeza que deseja sair desta página?',
       onUpdatingWithUnsavedChanges:
         'Há mudanças não salvas. Por favor, salve-as antes de atualizar o status.',
       onPublishingNotReady: 'Por favor, altere o status para "Pronto" antes de publicar.',
@@ -77,11 +119,11 @@ const pt = {
       deleteEntry: 'Excluir entrada',
       saving: 'Salvando...',
       save: 'Salvar',
-      deleting: 'Deletando...',
+      deleting: 'Excluindo...',
       updating: 'Atualizando...',
       setStatus: 'Definir status',
       backCollection: ' Escrevendo na coleção %{collectionLabel}',
-      unsavedChanges: 'Alterções não salvas',
+      unsavedChanges: 'Alterações não salvas',
       changesSaved: 'Alterações salvas',
       draft: 'Rascunho',
       inReview: 'Em revisão',
@@ -92,11 +134,36 @@ const pt = {
       deployButtonLabel: 'Ver em Produção',
     },
     editorWidgets: {
+      markdown: {
+        richText: 'Rich Text',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Escolha uma imagem',
+        chooseDifferent: 'Escolha uma imagem diferente',
+        remove: 'Remover imagem',
+      },
+      file: {
+        choose: 'Escolha um arquivo',
+        chooseDifferent: 'Escolha um arquivo diferente',
+        remove: 'Remover arquivo',
+      },
       unknownControl: {
         noControl: "Nenhum controle para o widget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Nenhuma pré-visualização para o widget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Título nível 1',
+        headingTwo: 'Título nível 2',
+        headingThree: 'Título nível 3',
+        headingFour: 'Título nível 4',
+        headingFive: 'Título nível 5',
+        headingSix: 'Título nível 6',
+      },
+      datetime: {
+        now: 'Agora',
       },
     },
   },
@@ -106,6 +173,8 @@ const pt = {
     },
     mediaLibrary: {
       onDelete: 'Tem certeza de que deseja excluir a mídia selecionada?',
+      fileTooLarge:
+        'Arquivo muito grande.\nConfigurado para não permitir arquivos maiores que %{size} kB.',
     },
     mediaLibraryModal: {
       loading: 'Carregando...',
@@ -117,21 +186,27 @@ const pt = {
       mediaAssets: 'Recursos de mídia',
       search: 'Pesquisar...',
       uploading: 'Enviando...',
-      uploadNew: 'Enviar novo',
-      deleting: 'Deletando...',
+      upload: 'Enviar novo',
+      download: 'Download',
+      deleting: 'Excluindo...',
       deleteSelected: 'Excluir selecionado',
       chooseSelected: 'Escolher selecionado',
     },
   },
   ui: {
+    default: {
+      goBackToSite: 'Voltar ao site',
+    },
     errorBoundary: {
       title: 'Erro',
       details: 'Ocorreu um erro - por favor ',
-      reportIt: 'rekate-o.',
+      reportIt: 'relatar.',
       detailsHeading: 'Detalhes',
+      privacyWarning:
+        'Ao abrir uma issue, ela é preenchida com a mensagem de erro e o log de debug.\nPor favor, verifique se a informação está correta e remova dados sensíveis caso existam.',
       recoveredEntry: {
         heading: 'Documento recuperado',
-        warning: 'Copie/cole isso em algum lugar antes de navegar!',
+        warning: 'Copie/cole isso em algum lugar antes de sair!',
         copyButtonLabel: 'Copiar para área de transferência',
       },
     },
@@ -154,6 +229,8 @@ const pt = {
       entryUpdated: 'Status da entrada atualizado',
       onDeleteUnpublishedChanges: 'Alterações não publicadas excluídas',
       onFailToAuth: '%{details}',
+      onLoggedOut: 'Você foi desconectado. Por favor, salve as alterações e entre novamente',
+      onBackendDown: 'O serviço de back-end está fora do ar. Veja %{details} para mais informações',
     },
   },
   workflow: {
@@ -163,6 +240,7 @@ const pt = {
       newPost: 'Nova Publicação',
       description:
         '%{smart_count} entrada aguardando revisão, %{readyCount} pronta para publicação. |||| %{smart_count} entradas aguardando revisão, %{readyCount} pronta para publicação.',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} por %{author}',

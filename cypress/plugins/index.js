@@ -11,9 +11,16 @@
 // This function is called when a project is opened or re-opened (e.g. due to
 // the project's config changing)
 require('dotenv').config();
+const { merge } = require('lodash');
 const { addMatchImageSnapshotPlugin } = require('cypress-image-snapshot/plugin');
 
-const { setupGitHub, teardownGitHub, setupGitHubTest, teardownGitHubTest } = require('./github');
+const {
+  setupGitHub,
+  teardownGitHub,
+  setupGitHubTest,
+  teardownGitHubTest,
+  seedGitHubRepo,
+} = require('./github');
 const {
   setupGitGateway,
   teardownGitGateway,
@@ -28,8 +35,8 @@ const {
   teardownBitBucketTest,
 } = require('./bitbucket');
 const { setupProxy, teardownProxy, setupProxyTest, teardownProxyTest } = require('./proxy');
-
-const { copyBackendFiles } = require('../utils/config');
+const { setupTestBackend } = require('./testBackend');
+const { copyBackendFiles, switchVersion, updateConfig } = require('../utils/config');
 
 module.exports = async (on, config) => {
   // `on` is used to hook into various events Cypress emits
@@ -54,6 +61,9 @@ module.exports = async (on, config) => {
           break;
         case 'proxy':
           result = await setupProxy(options);
+          break;
+        case 'test':
+          result = await setupTestBackend(options);
           break;
       }
 
@@ -135,21 +145,35 @@ module.exports = async (on, config) => {
 
       return null;
     },
-  });
+    async seedRepo(taskData) {
+      const { backend } = taskData;
 
-  on('before:browser:launch', (browser = {}, args) => {
-    if (browser.name === 'chrome') {
-      // to allows usage of a mock proxy
-      args.push('--ignore-certificate-errors');
-      args.push('-–disable-gpu');
-      if (browser.isHeaded) {
-        args.push('--window-size=1200,1200');
-      } else {
-        args.push('--window-size=1200,1077');
+      console.log(`Seeding repository for backend`, backend);
+
+      switch (backend) {
+        case 'github':
+          await seedGitHubRepo(taskData);
+          break;
       }
 
-      return args;
-    }
+      return null;
+    },
+    async switchToVersion(taskData) {
+      const { version } = taskData;
+
+      console.log(`Switching CMS to version '${version}'`);
+
+      await switchVersion(version);
+
+      return null;
+    },
+    async updateConfig(config) {
+      await updateConfig(current => {
+        merge(current, config);
+      });
+
+      return null;
+    },
   });
 
   addMatchImageSnapshotPlugin(on, config);

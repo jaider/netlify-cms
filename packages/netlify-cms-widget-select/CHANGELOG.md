@@ -3,6 +3,99 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.7.2](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.7.1...netlify-cms-widget-select@2.7.2) (2020-11-26)
+
+
+### Bug Fixes
+
+* **widget-select:** allow number value type ([#4599](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/issues/4599)) ([9741a79](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/9741a79e4922553b69e1536d4e53f5fde45d30e1))
+
+
+
+
+
+## [2.7.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.7.0...netlify-cms-widget-select@2.7.1) (2020-11-08)
+
+**Note:** Version bump only for package netlify-cms-widget-select
+
+
+
+
+
+# [2.7.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.6.4...netlify-cms-widget-select@2.7.0) (2020-10-20)
+
+
+### Features
+
+* **widget-list:** add min max configuration ([#4394](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/issues/4394)) ([5fdfe40](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/5fdfe40dd29e9e22c9ae7d6219bc057f7ea7280b))
+
+
+
+
+
+## [2.6.4](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.6.3...netlify-cms-widget-select@2.6.4) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-widget-select
+
+
+
+
+
+## 2.6.3 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.6.2 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.6.1 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+# [2.6.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.5.1...netlify-cms-widget-select@2.6.0) (2020-06-18)
+
+
+### Features
+
+* add widgets schema validation ([#3841](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/issues/3841)) ([2b46608](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/2b46608f86d22c8ad34f75e396be7c34462d9e99))
+
+
+
+
+
+## [2.5.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.5.0...netlify-cms-widget-select@2.5.1) (2020-02-06)
+
+
+### Bug Fixes
+
+* **widget-select:** fix exactCount error message ([#3177](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/issues/3177)) ([46f7763](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/commit/46f7763ccd1445b758006770252cc911b12de15d))
+
+
+
+
+
 # [2.5.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-select/compare/netlify-cms-widget-select@2.4.3...netlify-cms-widget-select@2.5.0) (2020-02-01)
 
 

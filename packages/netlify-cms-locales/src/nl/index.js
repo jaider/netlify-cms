@@ -1,4 +1,19 @@
 const nl = {
+  auth: {
+    login: 'Inloggen',
+    loggingIn: 'Inloggen...',
+    loginWithNetlifyIdentity: 'Inloggen met Netlify Identity',
+    loginWithAzure: 'Inloggen met Azure',
+    loginWithBitbucket: 'Inloggen met Bitbucket',
+    loginWithGitHub: 'Inloggen met GitHub',
+    loginWithGitLab: 'Inloggen met GitLab',
+    errors: {
+      email: 'Voer uw email in.',
+      password: 'Voer uw wachtwoord in.',
+      identitySettings:
+        'Netlify Identity instellingen niet gevonden. Wanneer u git-gateway als backend gebruikt moet u de Identity service en Git Gateway activeren in uw Netlify instellingen.',
+    },
+  },
   app: {
     header: {
       content: 'Inhoud',
@@ -20,27 +35,53 @@ const nl = {
   collection: {
     sidebar: {
       collections: 'Inhoudstypen',
+      allCollections: 'Alle inhoudstypen',
       searchAll: 'Zoeken',
+      searchIn: 'Zoeken in',
     },
     collectionTop: {
+      sortBy: 'Sorteer op',
       viewAs: 'Bekijk als',
       newButton: 'Nieuwe %{collectionLabel}',
+      ascending: 'Oplopend',
+      descending: 'Aflopend',
+      searchResults: 'Zoekresultaten voor "%{searchTerm}"',
+      searchResultsInCollection: 'Zoekresultaten voor "%{searchTerm}" in %{collection}',
+      filterBy: 'Filteren op',
     },
     entries: {
       loadingEntries: 'Items laden',
       cachingEntries: 'Items cachen',
       longerLoading: 'Dit kan een paar minuten duren',
+      noEntries: 'Geen items',
+    },
+    defaultFields: {
+      author: {
+        label: 'Auteur',
+      },
+      updatedOn: {
+        label: 'Bijgewerkt op',
+      },
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'optioneel',
+      },
+    },
     editorControlPane: {
       widget: {
         required: '%{fieldLabel} is vereist.',
         regexPattern: '%{fieldLabel} komt niet overeen met het patroon: %{pattern}.',
         processing: '%{fieldLabel} wordt verwerkt.',
         range: '%{fieldLabel} moet tussen %{minValue} en %{maxValue} liggen.',
-        min: '%{fieldLabel} moet tenminste %{minValue} zijn.',
-        max: '%{fieldLabel} moet hoogstens %{maxValue} zijn.',
+        min: '%{fieldLabel} moet tenminste %{minValue} bevatten.',
+        max: '%{fieldLabel} moet hoogstens %{maxValue} bevatten.',
+        rangeCount: '%{fieldLabel} moet tussen %{minCount} en %{maxCount} item(s) bevatten.',
+        rangeCountExact: '%{fieldLabel} moet exact %{count} item(s) bevatten.',
+        minCount: '%{fieldLabel} moet tenminste %{minCount} item(s) bevatten.',
+        maxCount: '%{fieldLabel} moet hoogstens %{maxCount} item(s) bevatten.',
       },
     },
     editor: {
@@ -65,7 +106,11 @@ const nl = {
       publishing: 'Publiceren...',
       publish: 'Publiceer',
       published: 'Gepubliceerd',
+      unpublish: 'Publicatie terugtrekken',
+      duplicate: 'Dupliceren',
+      unpublishing: 'Publicatie ongedaan maken...',
       publishAndCreateNew: 'Publiceer en maak nieuw item aan',
+      publishAndDuplicate: 'Publiceer en dupliceer item',
       deleteUnpublishedChanges: 'Verwijder niet-gepubliceerde wijzigingen',
       deleteUnpublishedEntry: 'Niet-gepubliceerd item verwijderen',
       deletePublishedEntry: 'Gepubliceerd item verwijderen',
@@ -87,11 +132,36 @@ const nl = {
       deployButtonLabel: 'Bekijk Live',
     },
     editorWidgets: {
+      markdown: {
+        richText: 'Rijke tekst',
+        markdown: 'Markdown',
+      },
+      image: {
+        choose: 'Kies een afbeelding',
+        chooseDifferent: 'Kies een andere afbeelding',
+        remove: 'Verwijder afbeelding',
+      },
+      file: {
+        choose: 'Kies een bestand',
+        chooseDifferent: 'Kies een ander bestand',
+        remove: 'Verwijder bestand',
+      },
       unknownControl: {
         noControl: "Geen control voor widget '%{widget}'.",
       },
       unknownPreview: {
         noPreview: "Geen voorvertoning voor widget '%{widget}'.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
+      },
+      datetime: {
+        now: 'Nu',
       },
     },
   },
@@ -101,6 +171,8 @@ const nl = {
     },
     mediaLibrary: {
       onDelete: 'Weet u zeker dat u de geselecteerde media wilt verwijderen?',
+      fileTooLarge:
+        'Het bestand is te groot.\n De instellingen staan geen bestanden toe groter dan %{size} kB.',
     },
     mediaLibraryModal: {
       loading: 'Laden...',
@@ -108,21 +180,28 @@ const nl = {
       noAssetsFound: 'Geen media gevonden.',
       noImagesFound: 'Geen afbeeldingen gevonden.',
       private: 'Privé',
+      images: 'Afbeeldingen',
       mediaAssets: 'Media',
       search: 'Zoeken...',
       uploading: 'Uploaden...',
-      uploadNew: 'Nieuwe uploaden',
+      upload: 'Nieuwe uploaden',
+      download: 'Downloaden',
       deleting: 'Verwijderen...',
       deleteSelected: 'Verwijder selectie',
       chooseSelected: 'Gebruik selectie',
     },
   },
   ui: {
+    default: {
+      goBackToSite: 'Ga terug naar site',
+    },
     errorBoundary: {
       title: 'Fout',
       details: 'Er is een fout opgetreden - ',
       reportIt: 'maak er alstublieft een melding van.',
       detailsHeading: 'Details',
+      privacyWarning:
+        'Als u een probleem opent, wordt het vooraf gevuld met het foutbericht en foutopsporingsgegevens. \nControleer of de informatie correct is en verwijder, indien aanwezig, gevoelige gegevens.',
       recoveredEntry: {
         heading: 'Hersteld document',
         warning: 'Kopieer / plak dit ergens voordat u weggaat!',
@@ -141,7 +220,9 @@ const nl = {
       missingRequiredField: 'Oeps, sommige verplichte velden zijn niet ingevuld.',
       entrySaved: 'Item opgeslagen',
       entryPublished: 'Item gepubliceerd',
+      entryUnpublished: 'Publicatie teruggetrokken',
       onFailToPublishEntry: 'Kan item niet publiceren: %{details}',
+      onFailToUnpublishEntry: 'Kan item niet terugtrekken: %{details}',
       entryUpdated: 'Status van item geüpdatet',
       onDeleteUnpublishedChanges: 'Niet-gepubliceerde wijzigingen verwijderd',
       onFailToAuth: '%{details}',
@@ -154,6 +235,7 @@ const nl = {
       newPost: 'Nieuw bericht',
       description:
         '%{smart_count} item wacht op beoordeling, %{readyCount} klaar om live te gaan. |||| %{smart_count} items wachten op beoordeling, %{readyCount} klaar om live te gaan. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date} door %{author}',

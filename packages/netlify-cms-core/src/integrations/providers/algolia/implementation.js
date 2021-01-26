@@ -1,6 +1,9 @@
 import _ from 'lodash';
 import { createEntry } from 'ValueObjects/Entry';
 import { selectEntrySlug } from 'Reducers/collections';
+import { unsentRequest } from 'netlify-cms-lib-util';
+
+const { fetchWithTimeout: fetch } = unsentRequest;
 
 function getSlug(path) {
   return path
@@ -127,6 +130,37 @@ export default class Algolia {
         return { entries, pagination: response.page };
       });
     }
+  }
+
+  async listAllEntries(collection) {
+    const params = {
+      hitsPerPage: 1000,
+    };
+    let response = await this.request(
+      `${this.searchURL}/indexes/${this.indexPrefix}${collection.get('name')}`,
+      { params },
+    );
+    let { nbPages = 0, hits, page } = response;
+    page = page + 1;
+    while (page < nbPages) {
+      response = await this.request(
+        `${this.searchURL}/indexes/${this.indexPrefix}${collection.get('name')}`,
+        {
+          params: { ...params, page },
+        },
+      );
+      hits = [...hits, ...response.hits];
+      page = page + 1;
+    }
+    const entries = hits.map(hit => {
+      const slug = selectEntrySlug(collection, hit.path);
+      return createEntry(collection.get('name'), slug, hit.path, {
+        data: hit.data,
+        partial: true,
+      });
+    });
+
+    return entries;
   }
 
   getEntry(collection, slug) {

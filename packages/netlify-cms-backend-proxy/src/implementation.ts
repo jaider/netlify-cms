@@ -8,6 +8,9 @@ import {
   ImplementationFile,
   EditorialWorkflowError,
   APIError,
+  unsentRequest,
+  UnpublishedEntry,
+  blobToFileObj,
 } from 'netlify-cms-lib-util';
 import AuthenticationPage from './AuthenticationPage';
 
@@ -36,7 +39,8 @@ const deserializeMediaFile = ({ id, content, encoding, path, name }: MediaFile) 
       byteArray[i] = decodedContent.charCodeAt(i);
     }
   }
-  const file = new File([byteArray], name);
+  const blob = new Blob([byteArray]);
+  const file = blobToFileObj(name, blob);
   const url = URL.createObjectURL(file);
   return { id, name, path, file, size: file.size, url, displayURL: url };
 };
@@ -46,6 +50,7 @@ export default class ProxyBackend implements Implementation {
   mediaFolder: string;
   options: { initialWorkflowStatus?: string };
   branch: string;
+  cmsLabelPrefix?: string;
 
   constructor(config: Config, options = {}) {
     if (!config.backend.proxy_url) {
@@ -56,6 +61,15 @@ export default class ProxyBackend implements Implementation {
     this.proxyUrl = config.backend.proxy_url;
     this.mediaFolder = config.media_folder;
     this.options = options;
+    this.cmsLabelPrefix = config.backend.cms_label_prefix;
+  }
+
+  isGitBackend() {
+    return false;
+  }
+
+  status() {
+    return Promise.resolve({ auth: { status: true }, api: { status: true, statusPage: '' } });
   }
 
   authComponent() {
@@ -79,17 +93,18 @@ export default class ProxyBackend implements Implementation {
   }
 
   async request(payload: { action: string; params: Record<string, unknown> }) {
-    const response = await fetch(this.proxyUrl, {
+    const response = await unsentRequest.fetchWithTimeout(this.proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify({ branch: this.branch, ...payload }),
     });
 
     const json = await response.json();
+
     if (response.ok) {
       return json;
     } else {
-      throw new APIError(json.message, response.status, 'Proxy');
+      throw new APIError(json.error, response.status, 'Proxy');
     }
   }
 
@@ -121,21 +136,44 @@ export default class ProxyBackend implements Implementation {
     });
   }
 
-  async unpublishedEntry(collection: string, slug: string) {
+  async unpublishedEntry({
+    id,
+    collection,
+    slug,
+  }: {
+    id?: string;
+    collection?: string;
+    slug?: string;
+  }) {
     try {
-      const entry = await this.request({
+      const entry: UnpublishedEntry = await this.request({
         action: 'unpublishedEntry',
-        params: { branch: this.branch, collection, slug },
+        params: { branch: this.branch, id, collection, slug, cmsLabelPrefix: this.cmsLabelPrefix },
       });
 
-      const mediaFiles = entry.mediaFiles.map(deserializeMediaFile);
-      return { ...entry, mediaFiles };
+      return entry;
     } catch (e) {
       if (e.status === 404) {
         throw new EditorialWorkflowError('content is not under editorial workflow', true);
       }
       throw e;
     }
+  }
+
+  async unpublishedEntryDataFile(collection: string, slug: string, path: string, id: string) {
+    const { data } = await this.request({
+      action: 'unpublishedEntryDataFile',
+      params: { branch: this.branch, collection, slug, path, id },
+    });
+    return data;
+  }
+
+  async unpublishedEntryMediaFile(collection: string, slug: string, path: string, id: string) {
+    const file = await this.request({
+      action: 'unpublishedEntryMediaFile',
+      params: { branch: this.branch, collection, slug, path, id },
+    });
+    return deserializeMediaFile(file);
   }
 
   deleteUnpublishedEntry(collection: string, slug: string) {
@@ -145,15 +183,16 @@ export default class ProxyBackend implements Implementation {
     });
   }
 
-  async persistEntry(entry: Entry, assetProxies: AssetProxy[], options: PersistOptions) {
-    const assets = await Promise.all(assetProxies.map(serializeAsset));
+  async persistEntry(entry: Entry, options: PersistOptions) {
+    const assets = await Promise.all(entry.assets.map(serializeAsset));
     return this.request({
       action: 'persistEntry',
       params: {
         branch: this.branch,
-        entry,
+        dataFiles: entry.dataFiles,
         assets,
         options: { ...options, status: options.status || this.options.initialWorkflowStatus },
+        cmsLabelPrefix: this.cmsLabelPrefix,
       },
     });
   }
@@ -161,7 +200,13 @@ export default class ProxyBackend implements Implementation {
   updateUnpublishedEntryStatus(collection: string, slug: string, newStatus: string) {
     return this.request({
       action: 'updateUnpublishedEntryStatus',
-      params: { branch: this.branch, collection, slug, newStatus },
+      params: {
+        branch: this.branch,
+        collection,
+        slug,
+        newStatus,
+        cmsLabelPrefix: this.cmsLabelPrefix,
+      },
     });
   }
 
@@ -199,10 +244,10 @@ export default class ProxyBackend implements Implementation {
     return deserializeMediaFile(file);
   }
 
-  deleteFile(path: string, commitMessage: string) {
+  deleteFiles(paths: string[], commitMessage: string) {
     return this.request({
-      action: 'deleteFile',
-      params: { branch: this.branch, path, options: { commitMessage } },
+      action: 'deleteFiles',
+      params: { branch: this.branch, paths, options: { commitMessage } },
     });
   }
 

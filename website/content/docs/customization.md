@@ -1,7 +1,7 @@
 ---
 title: Creating Custom Previews
 weight: 50
-group: customization
+group: Customization
 ---
 
 The NetlifyCMS exposes a `window.CMS` global object that you can use to register custom widgets, previews and editor plugins. The available customization methods are:
@@ -61,7 +61,7 @@ Registers a template for a folder collection or an individual file in a file col
 * name: The name of the collection (or file for file collections) which this preview component will be used for.
   * Folder collections: Use the name of the collection
   * File collections: Use the name of the file
-* react_component: A React component that renders the collection data. Four props will be passed to your component during render:
+* react_component: A React component that renders the collection data. Six props will be passed to your component during render:
   * entry: Immutable collection containing the entry data.
   * widgetFor: Returns the appropriate widget preview component for a given field.
   * [widgetsFor](#lists-and-objects): Returns an array of objects with widgets and associated field data. For use with list and object type entries.
@@ -72,56 +72,25 @@ Registers a template for a folder collection or an individual file in a file col
     <script src="https://unpkg.com/netlify-cms@^2.0.0/dist/netlify-cms.js"></script>
     <script>
       var PostPreview = createClass({
-        subscribed: true,
-
-        getInitialState: function() {
-          return {
-            src: '',
-          };
-        },
-
-        _fetchAsset: function() {
-          const path = this.props.entry.getIn(['data', 'image']);
-          path &&
-            this.props.getAsset(path).then(value => {
-              if (this.subscribed) {
-                this.setState({ src: value.toString() });
-              }
-            });
-        },
-
-        componentDidMount: function() {
-          this._fetchAsset();
-        },
-
-        componentWillUnmount: function() {
-          this.subscribed = false;
-        },
-
-        componentDidUpdate: function(prevProps) {
-          const prevPath = prevProps.entry.getIn(['data', 'image']);
-          const path = this.props.entry.getIn(['data', 'image']);
-          if (prevPath !== path || prevProps.getAsset !== this.props.getAsset) {
-            this._fetchAsset();
-          }
-        },
-
         render: function() {
           var entry = this.props.entry;
-          return h(
-            'div',
-            {},
+          var image = entry.getIn(['data', 'image']);
+          var bg = this.props.getAsset(image);
+          return h('div', {},
             h('h1', {}, entry.getIn(['data', 'title'])),
-            h('img', { src: this.state.src }),
-            h('div', { className: 'text' }, this.props.widgetFor('body')),
+            h('img', {src: bg.toString()}),
+            h('div', {"className": "text"}, this.props.widgetFor('body'))
           );
-        },
+        }
       });
 
-      CMS.registerPreviewTemplate('posts', PostPreview);
+      CMS.registerPreviewTemplate("posts", PostPreview);
     </script>
     ```
-    ### Lists and Objects
+  * document: The preview pane iframe's [document instance](https://github.com/ryanseddon/react-frame-component/tree/9f8f06e1d3fc40da7122f0a57c62f7dec306e6cb#accessing-the-iframes-window-and-document).
+  * window: The preview pane iframe's [window instance](https://github.com/ryanseddon/react-frame-component/tree/9f8f06e1d3fc40da7122f0a57c62f7dec306e6cb#accessing-the-iframes-window-and-document).
+
+  ### Lists and Objects
     The API for accessing the individual fields of list- and object-type entries is similar to the API for accessing fields in standard entries, but there are a few key differences. Access to these nested fields is facilitated through the `widgetsFor` function, which is passed to the preview template component during render.
 	**Note**: as is often the case with the NetlifyCMS API, arrays and objects are created with Immutable.js. If some of the methods that we use are unfamiliar, such as `getIn`, check out [their docs](https://facebook.github.io/immutable-js/docs/#/) to get a better understanding.
     **List Example:**
@@ -162,10 +131,10 @@ Registers a template for a folder collection or an individual file in a file col
         );
       }
     });
-
     CMS.registerPreviewTemplate("authors", AuthorsPreview);
     </script>
     ```
+    
     **Object Example:**
     ```html
     <script>

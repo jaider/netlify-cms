@@ -3,6 +3,69 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.5](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/compare/netlify-cms-widget-date@2.5.4...netlify-cms-widget-date@2.5.5) (2020-09-15)
+
+**Note:** Version bump only for package netlify-cms-widget-date
+
+
+
+
+
+## 2.5.4 (2020-09-08)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([828bb16](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/commit/828bb16415b8c22a34caa19c50c38b24ffe9ceae))
+
+
+
+
+
+## 2.5.3 (2020-08-20)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([8262487](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/commit/82624879ccbcb16610090041db28f00714d924c8))
+
+
+
+
+
+## 2.5.2 (2020-07-27)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([118d50a](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/commit/118d50a7a70295f25073e564b5161aa2b9883056))
+
+
+
+
+
+## [2.5.1](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/compare/netlify-cms-widget-date@2.5.0...netlify-cms-widget-date@2.5.1) (2020-05-19)
+
+
+### Bug Fixes
+
+* **date:** allow default value to Date field ([#3740](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/issues/3740)) ([8ab2a60](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/commit/8ab2a6036be99c397c7d2fcb4ad3ebaeba549546))
+
+
+
+
+
+# [2.5.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/compare/netlify-cms-widget-date@2.4.0...netlify-cms-widget-date@2.5.0) (2020-04-07)
+
+
+### Features
+
+* **yaml:** support comments ([#3529](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/issues/3529)) ([4afbbdd](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/commit/4afbbdd8a99241d239f28c5be544bb0ca77e345b))
+
+
+
+
+
 # [2.4.0](https://github.com/netlify/netlify-cms/tree/master/packages/netlify-cms-widget-date/compare/netlify-cms-widget-date@2.3.5...netlify-cms-widget-date@2.4.0) (2019-12-16)
 
 

@@ -33,6 +33,11 @@ const hu = {
     },
   },
   editor: {
+    editorControl: {
+      field: {
+        optional: 'választható',
+      },
+    },
     editorControlPane: {
       widget: {
         required: '%{fieldLabel} kötelező mező.',
@@ -93,11 +98,29 @@ const hu = {
       deployButtonLabel: 'Élő megtekintése',
     },
     editorWidgets: {
+      image: {
+        choose: 'Válasszon képet',
+        chooseDifferent: 'Válasszon másik képet',
+        remove: 'Távolítsa el a képet',
+      },
+      file: {
+        choose: 'Válasszon fájlt',
+        chooseDifferent: 'Válasszon másik fájlt',
+        remove: 'Távolítsa el a fájlt',
+      },
       unknownControl: {
         noControl: "Nincs vezérlés a '%{widget}' widget számára.",
       },
       unknownPreview: {
         noPreview: "Nincs előnézet a '%{widget}' widget számára.",
+      },
+      headingOptions: {
+        headingOne: 'Heading 1',
+        headingTwo: 'Heading 2',
+        headingThree: 'Heading 3',
+        headingFour: 'Heading 4',
+        headingFive: 'Heading 5',
+        headingSix: 'Heading 6',
       },
     },
   },
@@ -118,7 +141,7 @@ const hu = {
       mediaAssets: 'Média tartalmak',
       search: 'Keresés...',
       uploading: 'Feltöltés...',
-      uploadNew: 'Új feltöltés',
+      upload: 'Új feltöltés',
       deleting: 'Törlés...',
       deleteSelected: 'Kijelöltek törlése',
       chooseSelected: 'Kijelöl',
@@ -163,6 +186,7 @@ const hu = {
       newPost: 'New Post',
       description:
         '%{smart_count} bejegyzés felülvizsgálatra vár, %{readyCount} élesítésre vár. |||| %{smart_count} bejegyzés felülvizsgálatra vár, %{readyCount} élesítésre vár. ',
+      dateFormat: 'MMMM D',
     },
     workflowCard: {
       lastChange: '%{date}, írta %{author}',
